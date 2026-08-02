@@ -1,0 +1,165 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Cardápio Digital — design system (inspirado no Linear)
+ * Dark-only, denso, minimalista. Todos os valores em oklch.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-elevated: var(--elevated);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--primary);
+  --color-sidebar-primary-foreground: var(--primary-foreground);
+  --color-sidebar-accent: var(--accent);
+  --color-sidebar-accent-foreground: var(--accent-foreground);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-ring: var(--ring);
+  --color-tag-mustard: var(--tag-mustard);
+  --color-tag-terracotta: var(--tag-terracotta);
+  --color-tag-olive: var(--tag-olive);
+  --shadow-panel: 0 1px 2px oklch(0 0 0 / 4%), 0 8px 24px oklch(0.35 0.03 90 / 8%);
+}
+
+:root {
+  --radius: 1rem;
+
+  /* fundo bege/creme #F5F1E8 */
+  --background: oklch(0.955 0.017 91);
+  --foreground: oklch(0.22 0.004 90);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.004 90);
+  --elevated: oklch(0.985 0.008 91);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.004 90);
+
+  /* verde floresta #1A472A */
+  --primary: oklch(0.36 0.083 155);
+  --primary-foreground: oklch(0.99 0.005 95);
+  --primary-soft: oklch(0.36 0.083 155 / 10%);
+
+  --secondary: oklch(0.93 0.018 92);
+  --secondary-foreground: oklch(0.22 0.004 90);
+
+  --muted: oklch(0.93 0.018 92);
+  /* cinza-oliva #6B6B5F */
+  --muted-foreground: oklch(0.52 0.017 100);
+
+  --accent: oklch(0.925 0.022 95);
+  --accent-foreground: oklch(0.22 0.004 90);
+
+  --destructive: oklch(0.55 0.13 40);
+  --destructive-foreground: oklch(0.99 0.005 95);
+  --success: oklch(0.5 0.09 150);
+  --warning: oklch(0.7 0.11 82);
+
+  /* tags terrosas */
+  --tag-mustard: oklch(0.72 0.12 88);
+  --tag-terracotta: oklch(0.58 0.12 45);
+  --tag-olive: oklch(0.58 0.07 118);
+
+  --border: oklch(0.22 0.01 95 / 10%);
+  --input: oklch(0.22 0.01 95 / 14%);
+  --ring: oklch(0.36 0.083 155);
+
+  --sidebar: oklch(0.975 0.014 92);
+  --sidebar-foreground: oklch(0.22 0.004 90);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.011em;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  button:not([data-slot]) {
+    border-radius: 999px;
+  }
+
+  input[type="text"],
+  input[type="date"],
+  input:not([type]),
+  textarea,
+  select {
+    border-radius: 1rem;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.22 0.01 95 / 14%);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+@utility panel {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-panel);
+}
+
+@utility pill {
+  border-radius: 999px;
+}
+
+@utility hairline {
+  border-bottom: 1px solid var(--color-border);
+}
