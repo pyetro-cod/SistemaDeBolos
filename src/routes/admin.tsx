@@ -78,7 +78,7 @@ function AdminLayout() {
         <Link to="/" className="px-2 text-sm font-semibold">
           Cardápio Digital
         </Link>
-        <p className="mt-1 px-2 text-xs text-muted-foreground">Sweet Cake</p>
+        <p className="mt-1 px-2 text-xs text-muted-foreground">Queiroz Bolos</p>
         <nav className="mt-6 space-y-0.5">
           {links.map((l) => (
             <Link

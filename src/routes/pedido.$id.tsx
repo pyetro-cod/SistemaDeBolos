@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/pedido/$id")({
   head: () => ({
     meta: [
-      { title: "Acompanhar pedido — Sweet Cake" },
+      { title: "Acompanhar pedido — Queiroz Bolos" },
       { name: "description", content: "Acompanhe o status do seu pedido em tempo real." },
     ],
   }),
@@ -41,7 +41,7 @@ function AcompanharPedido() {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" strokeWidth={1.5} />
-          Sweet Cake
+          Queiroz Bolos
         </Link>
       </header>
 

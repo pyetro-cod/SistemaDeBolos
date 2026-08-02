@@ -34,13 +34,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Sweet Cake — Cardápio Digital" },
+      { title: "Queiroz Bolos — Cardápio Digital" },
       {
         name: "description",
         content:
           "Escolha entre bolos inteiros ou metade, faça seu pedido online e retire na loja ou receba em casa.",
       },
-      { property: "og:title", content: "Sweet Cake — Cardápio Digital" },
+      { property: "og:title", content: "Queiroz Bolos — Cardápio Digital" },
       {
         property: "og:description",
         content: "Bolos inteiros ou metade, pedido online, retirada ou entrega.",
@@ -114,8 +114,8 @@ function Index() {
     <main className="mx-auto min-h-screen w-full max-w-3xl px-5 pb-10">
       <header className="sticky top-0 z-20 -mx-5 border-b border-border bg-background/85 px-5 py-4 backdrop-blur">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold">Sweet Cake</h1>
+          <div className="flex flex-col gap-1">
+            <img src="/logo.png" alt="Queiroz Bolos" className="h-14 w-auto object-contain" />
             <p className="text-xs text-muted-foreground">Bolos inteiros ou metade</p>
           </div>
           <button
