@@ -72,6 +72,16 @@ export const TAMANHO_LABEL: Record<Tamanho, string> = {
   metade: "Metade",
 };
 
+export function traduzErroPedido(mensagem: string) {
+  if (mensagem.includes("estoque insuficiente")) return mensagem.replace("estoque insuficiente para", "Estoque insuficiente para");
+  if (mensagem.includes("produto indisponível")) return "Um dos produtos ficou indisponível. Atualize a página.";
+  if (mensagem.includes("nome do cliente")) return "Preencha seu nome.";
+  if (mensagem.includes("tipo_entrega")) return "Escolha uma forma de entrega.";
+  if (mensagem.includes("forma_pagamento")) return "Escolha uma forma de pagamento.";
+  if (mensagem.includes("pedido sem itens")) return "Seu carrinho está vazio.";
+  return mensagem;
+}
+
 export function brl(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value || 0);
 }
@@ -143,9 +153,19 @@ function normalizePedido(p: any): Pedido {
 }
 
 export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
-  const { data, error } = await db.from("pedidos").select(PEDIDO_SELECT).eq("id", id).maybeSingle();
+  const { data, error } = await db.rpc("obter_pedido_publico", { p_id: id }).maybeSingle();
   if (error) throw error;
-  return data ? normalizePedido(data) : null;
+  if (!data) return null;
+  return {
+    ...data,
+    telefone: null,
+    total: Number(data.total),
+    itens_pedido: (data.itens ?? []).map((i: any) => ({
+      ...i,
+      pedido_id: data.id,
+      preco_unitario: Number(i.preco_unitario),
+    })),
+  };
 }
 
 export async function fetchPedidosAtivos(): Promise<Pedido[]> {
@@ -195,48 +215,24 @@ export type DadosCliente = {
 };
 
 export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
-  const total = itens.reduce(
-    (acc, i) => acc + precoPorTamanho(i.produto, i.tamanho) * i.quantidade,
-    0,
-  );
-  const { data: pedido, error } = await db
-    .from("pedidos")
-    .insert({
-      status: "recebido",
-      nome_cliente: cliente.nome,
-      telefone: cliente.telefone || null,
-      tipo_entrega: cliente.tipoEntrega,
-      endereco: cliente.tipoEntrega === "entrega" ? cliente.endereco || null : null,
-      forma_pagamento: cliente.formaPagamento,
-      total,
-    })
-    .select("id")
-    .single();
+  const payload = itens.map((i) => ({
+    produto_id: i.produto.id,
+    quantidade: i.quantidade,
+    tamanho: i.tamanho,
+    observacoes: i.observacoes || null,
+  }));
+
+  const { data, error } = await db.rpc("criar_pedido_publico", {
+    p_nome_cliente: cliente.nome,
+    p_telefone: cliente.telefone || null,
+    p_tipo_entrega: cliente.tipoEntrega,
+    p_endereco: cliente.tipoEntrega === "entrega" ? cliente.endereco || null : null,
+    p_forma_pagamento: cliente.formaPagamento,
+    p_itens: payload,
+  });
   if (error) throw error;
 
-  const { error: itensError } = await db.from("itens_pedido").insert(
-    itens.map((i) => ({
-      pedido_id: pedido.id,
-      produto_id: i.produto.id,
-      nome_produto: i.produto.nome,
-      preco_unitario: precoPorTamanho(i.produto, i.tamanho),
-      quantidade: i.quantidade,
-      tamanho: i.tamanho,
-      observacoes: i.observacoes || null,
-    })),
-  );
-  if (itensError) throw itensError;
-
-  for (const i of itens) {
-    const coluna = i.tamanho === "inteiro" ? "estoque_inteiro" : "estoque_metade";
-    const atual = estoquePorTamanho(i.produto, i.tamanho);
-    await db
-      .from("produtos")
-      .update({ [coluna]: Math.max(0, atual - i.quantidade) })
-      .eq("id", i.produto.id);
-  }
-
-  return pedido.id as string;
+  return data as string;
 }
 
 export async function avancarStatus(pedido: Pedido) {

@@ -1,9 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { ChefHat, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        el: HTMLElement,
+        opts: { sitekey: string; callback: (token: string) => void; "expired-callback"?: () => void },
+      ) => string;
+      reset: (id?: string) => void;
+    };
+  }
+}
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -21,12 +35,49 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+function useTurnstile() {
+  const [token, setToken] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const widgetId = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY) return;
+
+    function renderWidget() {
+      if (!containerRef.current || !window.turnstile) return;
+      widgetId.current = window.turnstile.render(containerRef.current, {
+        sitekey: TURNSTILE_SITE_KEY!,
+        callback: (t) => setToken(t),
+        "expired-callback": () => setToken(null),
+      });
+    }
+
+    if (window.turnstile) {
+      renderWidget();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      script.async = true;
+      script.onload = renderWidget;
+      document.head.appendChild(script);
+    }
+  }, []);
+
+  function reset() {
+    setToken(null);
+    if (window.turnstile) window.turnstile.reset(widgetId.current);
+  }
+
+  return { token, containerRef, reset, enabled: Boolean(TURNSTILE_SITE_KEY) };
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const [modo, setModo] = useState<"entrar" | "criar">("entrar");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
+  const captcha = useTurnstile();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -40,24 +91,36 @@ function AuthPage() {
 
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
+    if (captcha.enabled && !captcha.token) {
+      toast.error("Confirme que você não é um robô.");
+      return;
+    }
     setLoading(true);
     try {
       if (modo === "criar") {
         const { error } = await supabase.auth.signUp({
           email,
           password: senha,
-          options: { emailRedirectTo: `${window.location.origin}/admin` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/admin`,
+            captchaToken: captcha.token ?? undefined,
+          },
         });
         if (error) throw error;
         toast.success("Conta criada! Verifique seu e-mail se for solicitado.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password: senha,
+          options: { captchaToken: captcha.token ?? undefined },
+        });
         if (error) throw error;
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível entrar.");
     } finally {
       setLoading(false);
+      captcha.reset();
     }
   }
 
@@ -129,9 +192,10 @@ function AuthPage() {
               placeholder="••••••••"
             />
           </div>
+          {captcha.enabled && <div ref={captcha.containerRef} className="pt-1" />}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (captcha.enabled && !captcha.token)}
             className="pill flex w-full items-center justify-center gap-2 bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
             {loading && <Loader2 className="size-4 animate-spin" />}

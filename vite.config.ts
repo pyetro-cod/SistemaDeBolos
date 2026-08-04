@@ -12,4 +12,9 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Deploy alvo: Vercel. Sem isso o Nitro tentaria detectar a plataforma sozinho
+  // (e, sem variáveis de ambiente de nenhuma plataforma, cai no padrão Cloudflare).
+  nitro: {
+    preset: "vercel",
+  },
 });
