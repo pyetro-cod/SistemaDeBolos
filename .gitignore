@@ -14,8 +14,8 @@ dist-ssr
 .vinxi
 .tanstack/**
 .nitro
-.env
 
+supabase
 
 *.local
 
@@ -33,3 +33,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.env
