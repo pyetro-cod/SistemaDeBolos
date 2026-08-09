@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminBalcaoRouteImport } from './routes/admin.balcao'
 import { Route as AdminCardapioRouteImport } from './routes/admin.cardapio'
 import { Route as AdminComandasRouteImport } from './routes/admin.comandas'
 import { Route as AdminCozinhaRouteImport } from './routes/admin.cozinha'
@@ -43,6 +44,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBalcaoRoute = AdminBalcaoRouteImport.update({
+  id: '/balcao',
+  path: '/balcao',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCardapioRoute = AdminCardapioRouteImport.update({
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/balcao': typeof AdminBalcaoRoute
   '/admin/cardapio': typeof AdminCardapioRoute
   '/admin/comandas': typeof AdminComandasRoute
   '/admin/cozinha': typeof AdminCozinhaRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/balcao': typeof AdminBalcaoRoute
   '/admin/cardapio': typeof AdminCardapioRoute
   '/admin/comandas': typeof AdminComandasRoute
   '/admin/cozinha': typeof AdminCozinhaRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/balcao': typeof AdminBalcaoRoute
   '/admin/cardapio': typeof AdminCardapioRoute
   '/admin/comandas': typeof AdminComandasRoute
   '/admin/cozinha': typeof AdminCozinhaRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/sitemap.xml'
+    | '/admin/balcao'
     | '/admin/cardapio'
     | '/admin/comandas'
     | '/admin/cozinha'
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/sitemap.xml'
+    | '/admin/balcao'
     | '/admin/cardapio'
     | '/admin/comandas'
     | '/admin/cozinha'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/sitemap.xml'
+    | '/admin/balcao'
     | '/admin/cardapio'
     | '/admin/comandas'
     | '/admin/cozinha'
@@ -190,6 +202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/balcao': {
+      id: '/admin/balcao'
+      path: '/balcao'
+      fullPath: '/admin/balcao'
+      preLoaderRoute: typeof AdminBalcaoRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/cardapio': {
       id: '/admin/cardapio'
       path: '/cardapio'
@@ -229,6 +248,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminBalcaoRoute: typeof AdminBalcaoRoute
   AdminCardapioRoute: typeof AdminCardapioRoute
   AdminComandasRoute: typeof AdminComandasRoute
   AdminCozinhaRoute: typeof AdminCozinhaRoute
@@ -237,6 +257,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminBalcaoRoute: AdminBalcaoRoute,
   AdminCardapioRoute: AdminCardapioRoute,
   AdminComandasRoute: AdminComandasRoute,
   AdminCozinhaRoute: AdminCozinhaRoute,
