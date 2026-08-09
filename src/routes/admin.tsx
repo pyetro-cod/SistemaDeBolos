@@ -103,8 +103,9 @@ function AdminLayout() {
     <div className="flex min-h-screen">
       <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-border bg-sidebar px-3 py-5 md:flex">
         <div className="flex items-center justify-between px-2">
-          <Link to="/" className="text-sm font-semibold">
-            Cardápio Digital
+          <Link to="/" className="flex items-center gap-2 text-sm font-semibold">
+            <img src="/logo.png" alt="Queiroz Bolos" className="size-6 rounded-full object-cover shrink-0" />
+            <span>Cardápio Digital</span>
           </Link>
           <button
             type="button"
@@ -115,7 +116,10 @@ function AdminLayout() {
             {som ? <Bell className="size-4" strokeWidth={1.5} /> : <BellOff className="size-4" strokeWidth={1.5} />}
           </button>
         </div>
-        <p className="mt-1 px-2 text-xs text-muted-foreground">Sweet Cake</p>
+        <div className="mt-2 flex items-center gap-2 px-2">
+          <img src="/logo.png" alt="Queiroz Bolos" className="size-5 rounded-full object-cover shrink-0" />
+          <span className="text-xs font-medium text-muted-foreground">Queiroz Bolos</span>
+        </div>
         <nav className="mt-6 space-y-0.5">
           {links.map((l) => (
             <Link
@@ -148,6 +152,9 @@ function AdminLayout() {
 
       <div className="min-w-0 flex-1">
         <nav className="flex items-center gap-1 overflow-x-auto border-b border-border px-3 py-2 md:hidden">
+          <Link to="/" className="mr-1 flex shrink-0 items-center gap-1.5 border-r border-border pr-2">
+            <img src="/logo.png" alt="Queiroz Bolos" className="size-6 rounded-full object-cover" />
+          </Link>
           {links.map((l) => (
             <Link
               key={l.to}
