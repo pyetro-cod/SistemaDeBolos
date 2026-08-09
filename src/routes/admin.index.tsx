@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Receipt, TrendingUp, Flame, PackageX } from "lucide-react";
-import { brl, fetchPedidosDoDia, fetchProdutos } from "@/lib/cardapio";
+import { brl, fetchPedidosDoDia, fetchProdutos, inteirosDisponiveis } from "@/lib/cardapio";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -49,9 +49,7 @@ function Dashboard() {
     },
   ];
 
-  const estoqueBaixo = produtos.filter(
-    (p) => p.ativo && (p.estoque_inteiro <= 1 || p.estoque_metade <= 1),
-  );
+  const estoqueBaixo = produtos.filter((p) => p.ativo && inteirosDisponiveis(p) <= 1);
 
   return (
     <main className="px-6 py-8">
@@ -81,15 +79,18 @@ function Dashboard() {
             Nenhum bolo com estoque baixo.
           </p>
         )}
-        {estoqueBaixo.map((p) => (
-          <div key={p.id} className="panel p-4">
-            <p className="text-sm font-semibold">{p.nome}</p>
-            <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-              <span>Inteiros: {p.estoque_inteiro}</span>
-              <span>Metades: {p.estoque_metade}</span>
+        {estoqueBaixo.map((p) => {
+          const inteiros = inteirosDisponiveis(p);
+          return (
+            <div key={p.id} className="panel p-4">
+              <p className="text-sm font-semibold">{p.nome}</p>
+              <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+                <span>Inteiros disponíveis: {inteiros}</span>
+                <span>Estoque (meios): {p.estoque_meios}</span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </main>
   );
