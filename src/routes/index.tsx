@@ -19,9 +19,11 @@ import {
 import {
   brl,
   criarPedido,
-  estoquePorTamanho,
+  disponivelPorTamanho,
   fetchProdutos,
+  inteirosDisponiveis,
   precoPorTamanho,
+  traduzErroPedido,
   type DadosCliente,
   type FormaPagamento,
   type NovoItem,
@@ -34,13 +36,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Queiroz Bolos — Cardápio Digital" },
+      { title: "Sweet Cake — Cardápio Digital" },
       {
         name: "description",
         content:
           "Escolha entre bolos inteiros ou metade, faça seu pedido online e retire na loja ou receba em casa.",
       },
-      { property: "og:title", content: "Queiroz Bolos — Cardápio Digital" },
+      { property: "og:title", content: "Sweet Cake — Cardápio Digital" },
       {
         property: "og:description",
         content: "Bolos inteiros ou metade, pedido online, retirada ou entrega.",
@@ -107,15 +109,23 @@ function Index() {
       toast.success("Pedido enviado!");
       navigate({ to: "/pedido/$id", params: { id } });
     },
-    onError: () => toast.error("Não foi possível enviar o pedido"),
+    onError: (err) => {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err && "message" in err
+            ? String((err as { message: unknown }).message)
+            : "";
+      toast.error(msg ? traduzErroPedido(msg) : "Não foi possível enviar o pedido");
+    },
   });
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-3xl px-5 pb-10">
       <header className="sticky top-0 z-20 -mx-5 border-b border-border bg-background/85 px-5 py-4 backdrop-blur">
         <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-1">
-            <img src="/logo.png" alt="Queiroz Bolos" className="h-14 w-auto object-contain" />
+          <div>
+            <h1 className="text-lg font-semibold">Sweet Cake</h1>
             <p className="text-xs text-muted-foreground">Bolos inteiros ou metade</p>
           </div>
           <button
@@ -136,8 +146,8 @@ function Index() {
       <section className="pt-8">
         <h2 className="text-2xl leading-tight">Os melhores bolos da cidade.</h2>
         <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-          Escolha entre bolos inteiros ou metade. Faça seu pedido online e retire na loja ou
-          receba em casa.
+          Escolha entre bolos inteiros ou metade. Faça seu pedido online e retire na loja ou receba
+          em casa.
         </p>
       </section>
 
@@ -161,7 +171,10 @@ function Index() {
       )}
 
       {carrinhoAberto && (
-        <div className="fixed inset-0 z-30 flex justify-end bg-black/50" onClick={() => setCarrinhoAberto(false)}>
+        <div
+          className="fixed inset-0 z-30 flex justify-end bg-black/50"
+          onClick={() => setCarrinhoAberto(false)}
+        >
           <div
             onClick={(e) => e.stopPropagation()}
             className="flex h-full w-full max-w-md flex-col border-l border-border bg-background"
@@ -217,14 +230,13 @@ function CardProduto({
   produto: Produto;
   onAdicionar: (produto: Produto, tamanho: Tamanho, quantidade: number) => void;
 }) {
-  const [tamanho, setTamanho] = useState<Tamanho>(
-    produto.estoque_inteiro > 0 ? "inteiro" : "metade",
-  );
+  const [tamanho, setTamanho] = useState<Tamanho>("inteiro");
   const [quantidade, setQuantidade] = useState(1);
 
   const preco = precoPorTamanho(produto, tamanho);
-  const estoque = estoquePorTamanho(produto, tamanho);
-  const semEstoque = estoque <= 0;
+  const semEstoque = !disponivelPorTamanho(produto, tamanho);
+  const maxQuantidade =
+    tamanho === "inteiro" ? inteirosDisponiveis(produto) : inteirosDisponiveis(produto) * 2;
 
   return (
     <div className="panel flex flex-col gap-3 overflow-hidden p-0">
@@ -258,13 +270,16 @@ function CardProduto({
 
         <div className="flex gap-1.5">
           {(["inteiro", "metade"] as Tamanho[]).map((t) => {
-            const disponivel = estoquePorTamanho(produto, t) > 0;
+            const disponivel = disponivelPorTamanho(produto, t);
             return (
               <button
                 key={t}
                 type="button"
                 disabled={!disponivel}
-                onClick={() => setTamanho(t)}
+                onClick={() => {
+                  setTamanho(t);
+                  setQuantidade(1);
+                }}
                 className={cn(
                   "flex-1 rounded-lg border px-2 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40",
                   tamanho === t
@@ -279,7 +294,7 @@ function CardProduto({
         </div>
 
         <p className="text-xs text-muted-foreground">
-          {semEstoque ? "Sem estoque para este tamanho" : `${estoque} disponível(is)`}
+          {semEstoque ? "Sem estoque para este tamanho" : "Disponível"}
         </p>
 
         <div className="mt-auto flex items-center gap-3">
@@ -295,7 +310,7 @@ function CardProduto({
             <span className="w-6 text-center text-sm">{quantidade}</span>
             <button
               type="button"
-              onClick={() => setQuantidade((q) => Math.min(estoque || 1, q + 1))}
+              onClick={() => setQuantidade((q) => Math.min(maxQuantidade || 1, q + 1))}
               aria-label="Aumentar quantidade"
               className="size-8 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent"
             >
@@ -338,10 +353,14 @@ function Carrinho({
 
   const total = itens.reduce((a, i) => a + precoPorTamanho(i.produto, i.tamanho) * i.quantidade, 0);
   const podeEnviar =
-    itens.length > 0 && nome.trim().length > 0 && (tipoEntrega === "retirada" || endereco.trim().length > 0);
+    itens.length > 0 &&
+    nome.trim().length > 0 &&
+    (tipoEntrega === "retirada" || endereco.trim().length > 0);
 
   if (itens.length === 0) {
-    return <p className="p-6 text-center text-sm text-muted-foreground">Seu carrinho está vazio.</p>;
+    return (
+      <p className="p-6 text-center text-sm text-muted-foreground">Seu carrinho está vazio.</p>
+    );
   }
 
   return (
@@ -481,9 +500,7 @@ function Carrinho({
       <button
         type="button"
         disabled={!podeEnviar || enviando}
-        onClick={() =>
-          onFinalizar({ nome, telefone, tipoEntrega, endereco, formaPagamento })
-        }
+        onClick={() => onFinalizar({ nome, telefone, tipoEntrega, endereco, formaPagamento })}
         className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         Finalizar pedido

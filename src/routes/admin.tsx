@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   BookOpen,
@@ -9,9 +9,14 @@ import {
   History,
   LogOut,
   Loader2,
+  Bell,
+  BellOff,
+  Store,
 } from "lucide-react";
-import { useRealtimePedidos } from "@/hooks/use-realtime";
+import { useRealtimePedidos, useNotificacoesPedidos, somAtivo, definirSomAtivo } from "@/hooks/use-realtime";
+import { fetchPedidosAtivos } from "@/lib/cardapio";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -23,6 +28,7 @@ const links = [
   { to: "/admin/cardapio", label: "Cardápio", icon: BookOpen },
   { to: "/admin/comandas", label: "Pedidos", icon: ClipboardList },
   { to: "/admin/cozinha", label: "Cozinha", icon: ChefHat },
+  { to: "/admin/balcao", label: "Venda no balcão", icon: Store },
   { to: "/admin/historico", label: "Histórico", icon: History },
 ] as const;
 
@@ -61,8 +67,30 @@ function AdminGate() {
 
 function AdminLayout() {
   useRealtimePedidos();
+  const { setSomLigado } = useNotificacoesPedidos();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [som, setSom] = useState(true);
+
+  useEffect(() => {
+    const atual = somAtivo();
+    setSom(atual);
+    setSomLigado(atual);
+  }, [setSomLigado]);
+
+  const { data: pedidosAtivos = [] } = useQuery({
+    queryKey: ["pedidos", "ativos"],
+    queryFn: fetchPedidosAtivos,
+    refetchInterval: 15000,
+  });
+  const pendentes = pedidosAtivos.filter((p) => p.status === "recebido" && !p.visualizado).length;
+
+  function alternarSom() {
+    const novo = !som;
+    setSom(novo);
+    definirSomAtivo(novo);
+    setSomLigado(novo);
+  }
 
   async function sair() {
     await queryClient.cancelQueries();
@@ -71,14 +99,23 @@ function AdminLayout() {
     navigate({ to: "/auth", replace: true });
   }
 
-
   return (
     <div className="flex min-h-screen">
       <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-border bg-sidebar px-3 py-5 md:flex">
-        <Link to="/" className="px-2 text-sm font-semibold">
-          Cardápio Digital
-        </Link>
-        <p className="mt-1 px-2 text-xs text-muted-foreground">Queiroz Bolos</p>
+        <div className="flex items-center justify-between px-2">
+          <Link to="/" className="text-sm font-semibold">
+            Cardápio Digital
+          </Link>
+          <button
+            type="button"
+            onClick={alternarSom}
+            aria-label={som ? "Desativar som de notificação" : "Ativar som de notificação"}
+            className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent"
+          >
+            {som ? <Bell className="size-4" strokeWidth={1.5} /> : <BellOff className="size-4" strokeWidth={1.5} />}
+          </button>
+        </div>
+        <p className="mt-1 px-2 text-xs text-muted-foreground">Sweet Cake</p>
         <nav className="mt-6 space-y-0.5">
           {links.map((l) => (
             <Link
@@ -91,6 +128,11 @@ function AdminLayout() {
             >
               <l.icon className="size-4" strokeWidth={1.5} />
               {l.label}
+              {l.to === "/admin/comandas" && pendentes > 0 && (
+                <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-destructive text-[11px] font-medium text-destructive-foreground">
+                  {pendentes}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
@@ -104,7 +146,6 @@ function AdminLayout() {
         </button>
       </aside>
 
-
       <div className="min-w-0 flex-1">
         <nav className="flex items-center gap-1 overflow-x-auto border-b border-border px-3 py-2 md:hidden">
           {links.map((l) => (
@@ -114,9 +155,14 @@ function AdminLayout() {
               activeOptions={{ exact: "exact" in l ? l.exact : false }}
               activeProps={{ className: "bg-primary-soft text-primary" }}
               inactiveProps={{ className: "text-muted-foreground" }}
-              className="shrink-0 rounded-lg px-3 py-1.5 text-sm"
+              className={cn("relative shrink-0 rounded-lg px-3 py-1.5 text-sm")}
             >
               {l.label}
+              {l.to === "/admin/comandas" && pendentes > 0 && (
+                <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+                  {pendentes}
+                </span>
+              )}
             </Link>
           ))}
           <button

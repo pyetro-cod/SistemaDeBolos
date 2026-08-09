@@ -3,7 +3,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { brl, excluirProduto, fetchProdutos, salvarProduto, type Produto } from "@/lib/cardapio";
+import {
+  brl,
+  excluirProduto,
+  fetchProdutos,
+  inteirosDisponiveis,
+  salvarProduto,
+  type Produto,
+} from "@/lib/cardapio";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/cardapio")({
@@ -27,8 +34,7 @@ type Rascunho = {
   descricao: string;
   precoInteiro: string;
   precoMetade: string;
-  estoqueInteiro: string;
-  estoqueMetade: string;
+  quantidadeInteiros: string;
   categoria: string;
   foto_url: string;
   tags: string[];
@@ -40,8 +46,7 @@ const vazio: Rascunho = {
   descricao: "",
   precoInteiro: "",
   precoMetade: "",
-  estoqueInteiro: "0",
-  estoqueMetade: "0",
+  quantidadeInteiros: "0",
   categoria: "Bolos",
   foto_url: "",
   tags: [],
@@ -72,8 +77,7 @@ function GestaoCardapio() {
         descricao: r.descricao,
         preco_inteiro: numero(r.precoInteiro),
         preco_metade: numero(r.precoMetade),
-        estoque_inteiro: Math.max(0, Math.round(numero(r.estoqueInteiro))),
-        estoque_metade: Math.max(0, Math.round(numero(r.estoqueMetade))),
+        quantidadeInteiros: Math.max(0, Math.round(numero(r.quantidadeInteiros))),
         categoria: r.categoria,
         foto_url: r.foto_url,
         tags: r.tags,
@@ -97,7 +101,8 @@ function GestaoCardapio() {
   });
 
   const alternarAtivo = useMutation({
-    mutationFn: (p: Produto) => salvarProduto({ ...p, ativo: !p.ativo }),
+    mutationFn: (p: Produto) =>
+      salvarProduto({ ...p, quantidadeInteiros: inteirosDisponiveis(p), ativo: !p.ativo }),
     onSuccess: () => queryClient.invalidateQueries(),
   });
 
@@ -155,7 +160,7 @@ function GestaoCardapio() {
             </Campo>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Campo label="Preço inteiro (R$)">
               <input
                 required
@@ -174,25 +179,21 @@ function GestaoCardapio() {
                 className={inputCls}
               />
             </Campo>
-            <Campo label="Estoque inteiro">
+            <Campo label="Quantidade de bolos inteiros">
               <input
                 required
                 inputMode="numeric"
-                value={rascunho.estoqueInteiro}
-                onChange={(e) => setRascunho({ ...rascunho, estoqueInteiro: e.target.value })}
-                className={inputCls}
-              />
-            </Campo>
-            <Campo label="Estoque metade">
-              <input
-                required
-                inputMode="numeric"
-                value={rascunho.estoqueMetade}
-                onChange={(e) => setRascunho({ ...rascunho, estoqueMetade: e.target.value })}
+                value={rascunho.quantidadeInteiros}
+                onChange={(e) => setRascunho({ ...rascunho, quantidadeInteiros: e.target.value })}
                 className={inputCls}
               />
             </Campo>
           </div>
+          <p className="-mt-2 text-xs text-muted-foreground">
+            Cada bolo inteiro rende 2 metades. Enquanto houver ao menos 1 inteiro em estoque, o
+            cliente pode comprar Inteiro ou Metade; quando os inteiros acabarem, a opção Metade
+            também é desativada automaticamente.
+          </p>
 
           <Campo label="URL da foto (opcional)">
             <input
@@ -296,8 +297,12 @@ function GestaoCardapio() {
                           </p>
                         )}
                         <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-                          <span>Inteiro: {brl(p.preco_inteiro)} · estoque {p.estoque_inteiro}</span>
-                          <span>Metade: {brl(p.preco_metade)} · estoque {p.estoque_metade}</span>
+                          <span>Inteiro: {brl(p.preco_inteiro)}</span>
+                          <span>Metade: {brl(p.preco_metade)}</span>
+                          <span>
+                            Estoque: {inteirosDisponiveis(p)} inteiro(s)
+                            {p.estoque_meios % 2 === 1 ? " + 1 metade avulsa" : ""}
+                          </span>
                         </div>
                       </div>
                       <button
@@ -319,8 +324,7 @@ function GestaoCardapio() {
                             descricao: p.descricao ?? "",
                             precoInteiro: String(p.preco_inteiro),
                             precoMetade: String(p.preco_metade),
-                            estoqueInteiro: String(p.estoque_inteiro),
-                            estoqueMetade: String(p.estoque_metade),
+                            quantidadeInteiros: String(inteirosDisponiveis(p)),
                             categoria: p.categoria,
                             foto_url: p.foto_url ?? "",
                             tags: p.tags,

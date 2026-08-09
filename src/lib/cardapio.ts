@@ -6,6 +6,7 @@ export type PedidoStatus = "recebido" | "preparo" | "pronto" | "entregue" | "fec
 export type TipoEntrega = "retirada" | "entrega";
 export type FormaPagamento = "pix" | "cartao" | "dinheiro";
 export type Tamanho = "inteiro" | "metade";
+export type Origem = "online" | "balcao";
 
 export type Produto = {
   id: string;
@@ -13,8 +14,8 @@ export type Produto = {
   descricao: string | null;
   preco_inteiro: number;
   preco_metade: number;
-  estoque_inteiro: number;
-  estoque_metade: number;
+  /** estoque em "meios": 1 bolo inteiro = 2 meios */
+  estoque_meios: number;
   foto_url: string | null;
   categoria: string;
   tags: string[];
@@ -41,6 +42,8 @@ export type Pedido = {
   endereco: string | null;
   forma_pagamento: FormaPagamento;
   total: number;
+  origem: Origem;
+  visualizado: boolean;
   criado_em: string;
   atualizado_em: string;
   itens_pedido?: ItemPedido[];
@@ -49,12 +52,20 @@ export type Pedido = {
 export const STATUS_FLUXO: PedidoStatus[] = ["recebido", "preparo", "pronto", "entregue"];
 
 export const STATUS_LABEL: Record<PedidoStatus, string> = {
-  recebido: "Recebido",
+  recebido: "Novo pedido",
   preparo: "Em preparo",
-  pronto: "Pronto",
-  entregue: "Entregue",
+  pronto: "Saiu para entrega",
+  entregue: "Finalizado",
   fechado: "Concluído",
 };
+
+/** Rótulo do status "pronto", que muda conforme o tipo de entrega do pedido. */
+export function statusLabel(status: PedidoStatus, tipoEntrega: TipoEntrega) {
+  if (status === "pronto") {
+    return tipoEntrega === "entrega" ? "Saiu para entrega" : "Pronto para retirada";
+  }
+  return STATUS_LABEL[status];
+}
 
 export const TIPO_ENTREGA_LABEL: Record<TipoEntrega, string> = {
   retirada: "Retirada na loja",
@@ -73,12 +84,14 @@ export const TAMANHO_LABEL: Record<Tamanho, string> = {
 };
 
 export function traduzErroPedido(mensagem: string) {
-  if (mensagem.includes("estoque insuficiente")) return mensagem.replace("estoque insuficiente para", "Estoque insuficiente para");
+  if (mensagem.includes("estoque insuficiente"))
+    return mensagem.replace("estoque insuficiente para", "Estoque insuficiente para");
   if (mensagem.includes("produto indisponível")) return "Um dos produtos ficou indisponível. Atualize a página.";
   if (mensagem.includes("nome do cliente")) return "Preencha seu nome.";
   if (mensagem.includes("tipo_entrega")) return "Escolha uma forma de entrega.";
   if (mensagem.includes("forma_pagamento")) return "Escolha uma forma de pagamento.";
   if (mensagem.includes("pedido sem itens")) return "Seu carrinho está vazio.";
+  if (mensagem.includes("venda sem itens")) return "Adicione ao menos um item.";
   return mensagem;
 }
 
@@ -96,8 +109,18 @@ export function precoPorTamanho(produto: Produto, tamanho: Tamanho) {
   return tamanho === "inteiro" ? produto.preco_inteiro : produto.preco_metade;
 }
 
-export function estoquePorTamanho(produto: Produto, tamanho: Tamanho) {
-  return tamanho === "inteiro" ? produto.estoque_inteiro : produto.estoque_metade;
+/** Quantos bolos inteiros "fechados" restam (1 inteiro = 2 meios). */
+export function inteirosDisponiveis(produto: Produto) {
+  return Math.floor(produto.estoque_meios / 2);
+}
+
+/**
+ * Disponibilidade por tamanho: enquanto houver ao menos 1 bolo inteiro,
+ * tanto Inteiro quanto Metade ficam disponíveis. Ao zerar os inteiros,
+ * a opção Metade também é desabilitada (mesmo que sobre 1 meio avulso).
+ */
+export function disponivelPorTamanho(produto: Produto, _tamanho: Tamanho) {
+  return inteirosDisponiveis(produto) >= 1;
 }
 
 const db = supabase as unknown as {
@@ -117,8 +140,7 @@ function normalizeProduto(p: any): Produto {
     ...p,
     preco_inteiro: Number(p.preco_inteiro),
     preco_metade: Number(p.preco_metade),
-    estoque_inteiro: Number(p.estoque_inteiro),
-    estoque_metade: Number(p.estoque_metade),
+    estoque_meios: Number(p.estoque_meios),
   };
 }
 
@@ -160,6 +182,8 @@ export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
   return {
     ...data,
     telefone: null,
+    origem: "online",
+    visualizado: true,
     total: Number(data.total),
     itens_pedido: (data.itens ?? []).map((i: any) => ({
       ...i,
@@ -215,24 +239,35 @@ export type DadosCliente = {
   formaPagamento: FormaPagamento;
 };
 
-export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
-  const payload = itens.map((i) => ({
+function itensParaPayload(itens: NovoItem[]) {
+  return itens.map((i) => ({
     produto_id: i.produto.id,
     quantidade: i.quantidade,
     tamanho: i.tamanho,
     observacoes: i.observacoes || null,
   }));
+}
 
+export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
   const { data, error } = await db.rpc("criar_pedido_publico", {
     p_nome_cliente: cliente.nome,
     p_telefone: cliente.telefone || null,
     p_tipo_entrega: cliente.tipoEntrega,
     p_endereco: cliente.tipoEntrega === "entrega" ? cliente.endereco || null : null,
     p_forma_pagamento: cliente.formaPagamento,
-    p_itens: payload,
+    p_itens: itensParaPayload(itens),
   });
   if (error) throw error;
+  return data as string;
+}
 
+/** Registra uma venda feita presencialmente no balcão (não passa pelo fluxo online). */
+export async function registrarVendaBalcao(formaPagamento: FormaPagamento, itens: NovoItem[]) {
+  const { data, error } = await db.rpc("registrar_venda_balcao", {
+    p_forma_pagamento: formaPagamento,
+    p_itens: itensParaPayload(itens),
+  });
+  if (error) throw error;
   return data as string;
 }
 
@@ -262,15 +297,27 @@ export async function concluirPedido(pedidoId: string) {
   if (error) throw error;
 }
 
-export async function salvarProduto(produto: Partial<Produto> & { id?: string }) {
+export async function marcarVisualizado(pedidoIds: string[]) {
+  if (pedidoIds.length === 0) return;
+  const { error } = await db.from("pedidos").update({ visualizado: true }).in("id", pedidoIds);
+  if (error) throw error;
+}
+
+export async function salvarProduto(
+  produto: Partial<Produto> & { id?: string; quantidadeInteiros?: number },
+) {
+  const estoque_meios =
+    produto.quantidadeInteiros !== undefined
+      ? Math.max(0, Math.round(produto.quantidadeInteiros)) * 2
+      : (produto.estoque_meios ?? 0);
+
   const payload = {
     estabelecimento_id: ESTABELECIMENTO_ID,
     nome: produto.nome,
     descricao: produto.descricao || null,
     preco_inteiro: produto.preco_inteiro ?? 0,
     preco_metade: produto.preco_metade ?? 0,
-    estoque_inteiro: produto.estoque_inteiro ?? 0,
-    estoque_metade: produto.estoque_metade ?? 0,
+    estoque_meios,
     foto_url: produto.foto_url || null,
     categoria: produto.categoria || "Outros",
     tags: produto.tags ?? [],

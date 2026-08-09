@@ -1,15 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowRight, Truck, Store } from "lucide-react";
+import { ArrowRight, Truck, Store, Sparkles } from "lucide-react";
 import {
   avancarStatus,
   fetchPedidosAtivos,
   proximoStatus,
+  statusLabel,
   STATUS_FLUXO,
-  STATUS_LABEL,
   TAMANHO_LABEL,
 } from "@/lib/cardapio";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/cozinha")({
   head: () => ({
@@ -25,6 +26,13 @@ export const Route = createFileRoute("/admin/cozinha")({
   }),
   component: Cozinha,
 });
+
+const COLUNA_LABEL: Record<(typeof STATUS_FLUXO)[number], string> = {
+  recebido: "Novo pedido",
+  preparo: "Em preparo",
+  pronto: "Saiu / pronto p/ retirada",
+  entregue: "Finalizado",
+};
 
 function Cozinha() {
   const queryClient = useQueryClient();
@@ -54,17 +62,25 @@ function Cozinha() {
           return (
             <section key={status} className="rounded-lg border border-border bg-sidebar p-3">
               <header className="flex items-center justify-between px-1 pb-3">
-                <h2 className="text-sm font-semibold">{STATUS_LABEL[status]}</h2>
+                <h2 className="text-sm font-semibold">{COLUNA_LABEL[status]}</h2>
                 <span className="text-xs text-muted-foreground">{lista.length}</span>
               </header>
 
               <div className="space-y-2">
                 {lista.map((pedido) => {
                   const next = proximoStatus(pedido.status);
+                  const novo = pedido.status === "recebido" && !pedido.visualizado;
                   return (
-                    <article key={pedido.id} className="panel p-3">
+                    <article
+                      key={pedido.id}
+                      className={cn(
+                        "panel p-3",
+                        novo && "border-primary/50 ring-1 ring-primary/30",
+                      )}
+                    >
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold">
+                        <span className="flex items-center gap-1.5 text-sm font-semibold">
+                          {novo && <Sparkles className="size-3.5 text-primary" strokeWidth={1.5} />}
                           {pedido.nome_cliente || "Cliente"}
                         </span>
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
@@ -90,7 +106,7 @@ function Cozinha() {
                           onClick={() => avancar.mutate(pedido)}
                           className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
                         >
-                          {STATUS_LABEL[next]}
+                          {statusLabel(next, pedido.tipo_entrega)}
                           <ArrowRight className="size-3.5" strokeWidth={1.5} />
                         </button>
                       )}

@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
-import type { PedidoStatus } from "@/lib/cardapio";
-import { STATUS_LABEL } from "@/lib/cardapio";
+import type { PedidoStatus, TipoEntrega } from "@/lib/cardapio";
+import { statusLabel } from "@/lib/cardapio";
 
 const pedidoTone: Record<PedidoStatus, string> = {
   recebido: "bg-primary-soft text-primary border-primary/30",
@@ -10,7 +10,15 @@ const pedidoTone: Record<PedidoStatus, string> = {
   fechado: "bg-muted text-muted-foreground border-border",
 };
 
-export function StatusPedido({ status, className }: { status: PedidoStatus; className?: string }) {
+export function StatusPedido({
+  status,
+  tipoEntrega = "retirada",
+  className,
+}: {
+  status: PedidoStatus;
+  tipoEntrega?: TipoEntrega;
+  className?: string;
+}) {
   return (
     <span
       className={cn(
@@ -20,7 +28,7 @@ export function StatusPedido({ status, className }: { status: PedidoStatus; clas
       )}
     >
       <span className="size-1.5 rounded-full bg-current" />
-      {STATUS_LABEL[status]}
+      {statusLabel(status, tipoEntrega)}
     </span>
   );
 }

@@ -70,6 +70,15 @@ function Historico() {
               <span className="text-xs text-muted-foreground">
                 {TIPO_ENTREGA_LABEL[pedido.tipo_entrega]}
               </span>
+              <span
+                className={
+                  pedido.origem === "balcao"
+                    ? "rounded-md border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                    : "rounded-md border border-primary/30 bg-primary-soft px-1.5 py-0.5 text-[11px] text-primary"
+                }
+              >
+                {pedido.origem === "balcao" ? "Balcão" : "Online"}
+              </span>
               <span className="text-xs text-muted-foreground">
                 {new Date(pedido.atualizado_em).toLocaleString("pt-BR")}
               </span>

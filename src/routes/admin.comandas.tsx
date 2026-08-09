@@ -1,18 +1,21 @@
+import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowRight, Clock, Truck, Store } from "lucide-react";
+import { ArrowRight, Clock, Truck, Store, Sparkles } from "lucide-react";
 import {
   avancarStatus,
   brl,
   fetchPedidosAtivos,
+  marcarVisualizado,
   proximoStatus,
-  STATUS_LABEL,
+  statusLabel,
   TAMANHO_LABEL,
   TIPO_ENTREGA_LABEL,
   FORMA_PAGAMENTO_LABEL,
 } from "@/lib/cardapio";
 import { StatusPedido } from "@/components/status-badge";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/comandas")({
   head: () => ({
@@ -44,6 +47,17 @@ function Pedidos() {
     },
   });
 
+  const naoVistos = pedidos.filter((p) => p.status === "recebido" && !p.visualizado).map((p) => p.id);
+
+  useEffect(() => {
+    if (naoVistos.length === 0) return;
+    const t = setTimeout(() => {
+      marcarVisualizado(naoVistos).then(() => queryClient.invalidateQueries());
+    }, 4000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [naoVistos.join(",")]);
+
   return (
     <main className="px-6 py-8">
       <h1 className="text-2xl">Pedidos ativos</h1>
@@ -59,11 +73,21 @@ function Pedidos() {
         )}
         {pedidos.map((pedido) => {
           const next = proximoStatus(pedido.status);
+          const novo = pedido.status === "recebido" && !pedido.visualizado;
           return (
-            <article key={pedido.id} className="panel p-5">
+            <article
+              key={pedido.id}
+              className={cn("panel p-5", novo && "border-primary/50 ring-1 ring-primary/30")}
+            >
               <div className="flex flex-wrap items-center gap-3">
+                {novo && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+                    <Sparkles className="size-3" strokeWidth={1.5} />
+                    Novo pedido
+                  </span>
+                )}
                 <span className="text-sm font-semibold">{pedido.nome_cliente || "Cliente"}</span>
-                <StatusPedido status={pedido.status} />
+                <StatusPedido status={pedido.status} tipoEntrega={pedido.tipo_entrega} />
                 <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                   {pedido.tipo_entrega === "entrega" ? (
                     <Truck className="size-3.5" strokeWidth={1.5} />
@@ -105,7 +129,7 @@ function Pedidos() {
                   onClick={() => avancar.mutate(pedido)}
                   className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
-                  Avançar para {STATUS_LABEL[next]}
+                  Avançar para {statusLabel(next, pedido.tipo_entrega)}
                   <ArrowRight className="size-4" strokeWidth={1.5} />
                 </button>
               )}
