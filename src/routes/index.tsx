@@ -297,7 +297,9 @@ function CardProduto({
         </div>
 
         <p className="text-xs text-muted-foreground">
-          {semEstoque ? "Sem estoque para este tamanho" : "Disponível"}
+          {semEstoque
+            ? "Sem estoque para este tamanho"
+            : `${maxQuantidade} ${maxQuantidade === 1 ? "disponível" : "disponíveis"}`}
         </p>
 
         <div className="mt-auto flex items-center gap-3">
