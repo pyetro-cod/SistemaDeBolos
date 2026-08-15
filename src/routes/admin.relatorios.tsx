@@ -1,17 +1,18 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Receipt, TrendingUp, Truck, Store } from "lucide-react";
-import { fetchPedidosFechados, brl } from "@/lib/cardapio";
+import { CalendarDays, ChevronLeft, ChevronRight, Receipt, TrendingUp, Truck, Store } from "lucide-react";
+import { fetchPedidosPorPeriodo, brl } from "@/lib/cardapio";
 import {
   calcularIntervalo,
   calcularMetricas,
   deslocarReferencia,
-  filtrarPedidosPorIntervalo,
   rotuloIntervalo,
   PERIODO_LABEL,
   type Periodo,
 } from "@/lib/relatorios";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/relatorios")({
@@ -33,16 +34,13 @@ function Relatorios() {
   const [periodo, setPeriodo] = useState<Periodo>("dia");
   const [referencia, setReferencia] = useState(() => new Date());
 
-  const { data: pedidos = [] } = useQuery({
-    queryKey: ["pedidos", "fechados"],
-    queryFn: fetchPedidosFechados,
+  const { inicio, fim } = useMemo(() => calcularIntervalo(periodo, referencia), [periodo, referencia]);
+
+  const { data: pedidosDoPeriodo = [] } = useQuery({
+    queryKey: ["pedidos", "periodo", periodo, inicio.toISOString(), fim.toISOString()],
+    queryFn: () => fetchPedidosPorPeriodo(inicio, fim),
   });
 
-  const { inicio, fim } = calcularIntervalo(periodo, referencia);
-  const pedidosDoPeriodo = useMemo(
-    () => filtrarPedidosPorIntervalo(pedidos, inicio, fim),
-    [pedidos, inicio, fim],
-  );
   const metricas = useMemo(() => calcularMetricas(pedidosDoPeriodo), [pedidosDoPeriodo]);
 
   const cards = [
@@ -64,10 +62,7 @@ function Relatorios() {
           {PERIODOS.map((p) => (
             <button
               key={p}
-              onClick={() => {
-                setPeriodo(p);
-                setReferencia(new Date());
-              }}
+              onClick={() => setPeriodo(p)}
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm transition-colors",
                 periodo === p
@@ -88,9 +83,24 @@ function Relatorios() {
           >
             <ChevronLeft className="mx-auto size-4" strokeWidth={1.5} />
           </button>
-          <span className="min-w-[11rem] text-center text-sm font-medium capitalize">
-            {rotuloIntervalo(periodo, referencia)}
-          </span>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="inline-flex min-w-[11rem] items-center justify-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium capitalize transition-colors hover:bg-accent">
+                <CalendarDays className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+                {rotuloIntervalo(periodo, referencia)}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <Calendar
+                mode="single"
+                selected={referencia}
+                onSelect={(date) => date && setReferencia(date)}
+                captionLayout="dropdown"
+              />
+            </PopoverContent>
+          </Popover>
+
           <button
             onClick={() => setReferencia((r) => deslocarReferencia(periodo, r, 1))}
             aria-label="Próximo período"

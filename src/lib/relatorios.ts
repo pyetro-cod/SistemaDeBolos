@@ -71,7 +71,7 @@ export function rotuloIntervalo(periodo: Periodo, referencia: Date) {
 
 export function filtrarPedidosPorIntervalo(pedidos: Pedido[], inicio: Date, fim: Date) {
   return pedidos.filter((p) => {
-    const data = new Date(p.atualizado_em);
+    const data = new Date(p.criado_em);
     return data >= inicio && data <= fim;
   });
 }
@@ -140,11 +140,14 @@ export function calcularMetricas(pedidos: Pedido[]): Metricas {
 
 export type FaturamentoMes = { mes: string; label: string; total: number };
 
-export function faturamentoUltimosMeses(pedidos: Pedido[], quantidade = 6): FaturamentoMes[] {
-  const hoje = new Date();
+export function faturamentoUltimosMeses(
+  pedidos: Pedido[],
+  quantidade = 6,
+  referencia: Date = new Date(),
+): FaturamentoMes[] {
   const meses: FaturamentoMes[] = [];
   for (let i = quantidade - 1; i >= 0; i--) {
-    const ref = subMonths(hoje, i);
+    const ref = subMonths(referencia, i);
     const { inicio, fim } = calcularIntervalo("mes", ref);
     const total = filtrarPedidosPorIntervalo(pedidos, inicio, fim).reduce(
       (a, p) => a + p.total,

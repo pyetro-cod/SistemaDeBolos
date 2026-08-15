@@ -86,7 +86,8 @@ export const TAMANHO_LABEL: Record<Tamanho, string> = {
 export function traduzErroPedido(mensagem: string) {
   if (mensagem.includes("estoque insuficiente"))
     return mensagem.replace("estoque insuficiente para", "Estoque insuficiente para");
-  if (mensagem.includes("produto indisponível")) return "Um dos produtos ficou indisponível. Atualize a página.";
+  if (mensagem.includes("produto indisponível"))
+    return "Um dos produtos ficou indisponível. Atualize a página.";
   if (mensagem.includes("nome do cliente")) return "Preencha seu nome.";
   if (mensagem.includes("tipo_entrega")) return "Escolha uma forma de entrega.";
   if (mensagem.includes("forma_pagamento")) return "Escolha uma forma de pagamento.";
@@ -191,6 +192,18 @@ export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
       preco_unitario: Number(i.preco_unitario),
     })),
   };
+}
+
+/** Busca pedidos por intervalo de datas, independente do status (usado nos relatórios). */
+export async function fetchPedidosPorPeriodo(inicio: Date, fim: Date): Promise<Pedido[]> {
+  const { data, error } = await db
+    .from("pedidos")
+    .select(PEDIDO_SELECT)
+    .gte("criado_em", inicio.toISOString())
+    .lte("criado_em", fim.toISOString())
+    .order("criado_em", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(normalizePedido);
 }
 
 export async function fetchPedidosAtivos(): Promise<Pedido[]> {

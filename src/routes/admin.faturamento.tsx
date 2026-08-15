@@ -1,17 +1,18 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Receipt, TrendingUp, Wallet, Flame } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Receipt, TrendingUp, Wallet, Flame } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { addMonths } from "date-fns";
-import { fetchPedidosFechados, brl, FORMA_PAGAMENTO_LABEL } from "@/lib/cardapio";
+import { addMonths, subMonths } from "date-fns";
+import { fetchPedidosPorPeriodo, brl, FORMA_PAGAMENTO_LABEL } from "@/lib/cardapio";
 import {
   calcularIntervalo,
   calcularMetricas,
   faturamentoUltimosMeses,
-  filtrarPedidosPorIntervalo,
   rotuloIntervalo,
 } from "@/lib/relatorios";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 export const Route = createFileRoute("/admin/faturamento")({
   head: () => ({
@@ -28,18 +29,26 @@ export const Route = createFileRoute("/admin/faturamento")({
 
 function FaturamentoMensal() {
   const [referencia, setReferencia] = useState(() => new Date());
-  const { data: pedidos = [] } = useQuery({
-    queryKey: ["pedidos", "fechados"],
-    queryFn: fetchPedidosFechados,
+
+  const { inicio, fim } = useMemo(() => calcularIntervalo("mes", referencia), [referencia]);
+
+  const { data: pedidosDoMes = [] } = useQuery({
+    queryKey: ["pedidos", "periodo", "mes", inicio.toISOString(), fim.toISOString()],
+    queryFn: () => fetchPedidosPorPeriodo(inicio, fim),
   });
 
-  const { inicio, fim } = calcularIntervalo("mes", referencia);
-  const pedidosDoMes = useMemo(
-    () => filtrarPedidosPorIntervalo(pedidos, inicio, fim),
-    [pedidos, inicio, fim],
-  );
+  // range maior (6 meses) só para o gráfico histórico
+  const inicioHistorico = useMemo(() => calcularIntervalo("mes", subMonths(referencia, 5)).inicio, [referencia]);
+  const { data: pedidosHistorico = [] } = useQuery({
+    queryKey: ["pedidos", "periodo", "historico", inicioHistorico.toISOString(), fim.toISOString()],
+    queryFn: () => fetchPedidosPorPeriodo(inicioHistorico, fim),
+  });
+
   const metricas = useMemo(() => calcularMetricas(pedidosDoMes), [pedidosDoMes]);
-  const historico = useMemo(() => faturamentoUltimosMeses(pedidos, 6), [pedidos]);
+  const historico = useMemo(
+    () => faturamentoUltimosMeses(pedidosHistorico, 6, referencia),
+    [pedidosHistorico, referencia],
+  );
 
   const cards = [
     { label: "Faturamento do mês", value: brl(metricas.faturamento), icon: TrendingUp },
@@ -72,9 +81,24 @@ function FaturamentoMensal() {
           >
             <ChevronLeft className="mx-auto size-4" strokeWidth={1.5} />
           </button>
-          <span className="min-w-[10rem] text-center text-sm font-medium capitalize">
-            {rotuloIntervalo("mes", referencia)}
-          </span>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="inline-flex min-w-[10rem] items-center justify-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium capitalize transition-colors hover:bg-accent">
+                <CalendarDays className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+                {rotuloIntervalo("mes", referencia)}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <Calendar
+                mode="single"
+                selected={referencia}
+                onSelect={(date) => date && setReferencia(date)}
+                captionLayout="dropdown"
+              />
+            </PopoverContent>
+          </Popover>
+
           <button
             onClick={() => setReferencia((r) => addMonths(r, 1))}
             aria-label="Próximo mês"
