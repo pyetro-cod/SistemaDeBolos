@@ -18,7 +18,9 @@ import { Route as AdminBalcaoRouteImport } from './routes/admin.balcao'
 import { Route as AdminCardapioRouteImport } from './routes/admin.cardapio'
 import { Route as AdminComandasRouteImport } from './routes/admin.comandas'
 import { Route as AdminCozinhaRouteImport } from './routes/admin.cozinha'
+import { Route as AdminFaturamentoRouteImport } from './routes/admin.faturamento'
 import { Route as AdminHistoricoRouteImport } from './routes/admin.historico'
+import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -66,9 +68,19 @@ const AdminCozinhaRoute = AdminCozinhaRouteImport.update({
   path: '/cozinha',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFaturamentoRoute = AdminFaturamentoRouteImport.update({
+  id: '/faturamento',
+  path: '/faturamento',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminHistoricoRoute = AdminHistoricoRouteImport.update({
   id: '/historico',
   path: '/historico',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRelatoriosRoute = AdminRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
   getParentRoute: () => AdminRoute,
 } as any)
 const PedidoIdRoute = PedidoIdRouteImport.update({
@@ -86,7 +98,9 @@ export interface FileRoutesByFullPath {
   '/admin/cardapio': typeof AdminCardapioRoute
   '/admin/comandas': typeof AdminComandasRoute
   '/admin/cozinha': typeof AdminCozinhaRoute
+  '/admin/faturamento': typeof AdminFaturamentoRoute
   '/admin/historico': typeof AdminHistoricoRoute
+  '/admin/relatorios': typeof AdminRelatoriosRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -98,7 +112,9 @@ export interface FileRoutesByTo {
   '/admin/cardapio': typeof AdminCardapioRoute
   '/admin/comandas': typeof AdminComandasRoute
   '/admin/cozinha': typeof AdminCozinhaRoute
+  '/admin/faturamento': typeof AdminFaturamentoRoute
   '/admin/historico': typeof AdminHistoricoRoute
+  '/admin/relatorios': typeof AdminRelatoriosRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/admin': typeof AdminIndexRoute
 }
@@ -112,7 +128,9 @@ export interface FileRoutesById {
   '/admin/cardapio': typeof AdminCardapioRoute
   '/admin/comandas': typeof AdminComandasRoute
   '/admin/cozinha': typeof AdminCozinhaRoute
+  '/admin/faturamento': typeof AdminFaturamentoRoute
   '/admin/historico': typeof AdminHistoricoRoute
+  '/admin/relatorios': typeof AdminRelatoriosRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -127,7 +145,9 @@ export interface FileRouteTypes {
     | '/admin/cardapio'
     | '/admin/comandas'
     | '/admin/cozinha'
+    | '/admin/faturamento'
     | '/admin/historico'
+    | '/admin/relatorios'
     | '/pedido/$id'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -139,7 +159,9 @@ export interface FileRouteTypes {
     | '/admin/cardapio'
     | '/admin/comandas'
     | '/admin/cozinha'
+    | '/admin/faturamento'
     | '/admin/historico'
+    | '/admin/relatorios'
     | '/pedido/$id'
     | '/admin'
   id:
@@ -152,7 +174,9 @@ export interface FileRouteTypes {
     | '/admin/cardapio'
     | '/admin/comandas'
     | '/admin/cozinha'
+    | '/admin/faturamento'
     | '/admin/historico'
+    | '/admin/relatorios'
     | '/pedido/$id'
     | '/admin/'
   fileRoutesById: FileRoutesById
@@ -230,11 +254,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCozinhaRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/faturamento': {
+      id: '/admin/faturamento'
+      path: '/faturamento'
+      fullPath: '/admin/faturamento'
+      preLoaderRoute: typeof AdminFaturamentoRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/historico': {
       id: '/admin/historico'
       path: '/historico'
       fullPath: '/admin/historico'
       preLoaderRoute: typeof AdminHistoricoRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/relatorios': {
+      id: '/admin/relatorios'
+      path: '/relatorios'
+      fullPath: '/admin/relatorios'
+      preLoaderRoute: typeof AdminRelatoriosRouteImport
       parentRoute: typeof AdminRoute
     }
     '/pedido/$id': {
@@ -252,7 +290,9 @@ interface AdminRouteChildren {
   AdminCardapioRoute: typeof AdminCardapioRoute
   AdminComandasRoute: typeof AdminComandasRoute
   AdminCozinhaRoute: typeof AdminCozinhaRoute
+  AdminFaturamentoRoute: typeof AdminFaturamentoRoute
   AdminHistoricoRoute: typeof AdminHistoricoRoute
+  AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -261,7 +301,9 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCardapioRoute: AdminCardapioRoute,
   AdminComandasRoute: AdminComandasRoute,
   AdminCozinhaRoute: AdminCozinhaRoute,
+  AdminFaturamentoRoute: AdminFaturamentoRoute,
   AdminHistoricoRoute: AdminHistoricoRoute,
+  AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

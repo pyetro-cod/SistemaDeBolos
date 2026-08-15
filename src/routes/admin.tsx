@@ -12,8 +12,15 @@ import {
   Bell,
   BellOff,
   Store,
+  Wallet,
+  BarChart3,
 } from "lucide-react";
-import { useRealtimePedidos, useNotificacoesPedidos, somAtivo, definirSomAtivo } from "@/hooks/use-realtime";
+import {
+  useRealtimePedidos,
+  useNotificacoesPedidos,
+  somAtivo,
+  definirSomAtivo,
+} from "@/hooks/use-realtime";
 import { fetchPedidosAtivos } from "@/lib/cardapio";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -29,9 +36,10 @@ const links = [
   { to: "/admin/comandas", label: "Pedidos", icon: ClipboardList },
   { to: "/admin/cozinha", label: "Cozinha", icon: ChefHat },
   { to: "/admin/balcao", label: "Venda no balcão", icon: Store },
+  { to: "/admin/faturamento", label: "Faturamento", icon: Wallet },
+  { to: "/admin/relatorios", label: "Relatórios", icon: BarChart3 },
   { to: "/admin/historico", label: "Histórico", icon: History },
 ] as const;
-
 function AdminGate() {
   const navigate = useNavigate();
   const [estado, setEstado] = useState<"carregando" | "ok">("carregando");
@@ -104,7 +112,11 @@ function AdminLayout() {
       <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-border bg-sidebar px-3 py-5 md:flex">
         <div className="flex items-center justify-between px-2">
           <Link to="/" className="flex items-center gap-2 text-sm font-semibold">
-            <img src="/logo.png" alt="Queiroz Bolos" className="size-6 rounded-full object-cover shrink-0" />
+            <img
+              src="/logo.png"
+              alt="Queiroz Bolos"
+              className="size-6 rounded-full object-cover shrink-0"
+            />
             <span>Cardápio Digital</span>
           </Link>
           <button
@@ -113,11 +125,19 @@ function AdminLayout() {
             aria-label={som ? "Desativar som de notificação" : "Ativar som de notificação"}
             className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent"
           >
-            {som ? <Bell className="size-4" strokeWidth={1.5} /> : <BellOff className="size-4" strokeWidth={1.5} />}
+            {som ? (
+              <Bell className="size-4" strokeWidth={1.5} />
+            ) : (
+              <BellOff className="size-4" strokeWidth={1.5} />
+            )}
           </button>
         </div>
         <div className="mt-2 flex items-center gap-2 px-2">
-          <img src="/logo.png" alt="Queiroz Bolos" className="size-5 rounded-full object-cover shrink-0" />
+          <img
+            src="/logo.png"
+            alt="Queiroz Bolos"
+            className="size-5 rounded-full object-cover shrink-0"
+          />
           <span className="text-xs font-medium text-muted-foreground">Queiroz Bolos</span>
         </div>
         <nav className="mt-6 space-y-0.5">
@@ -152,7 +172,10 @@ function AdminLayout() {
 
       <div className="min-w-0 flex-1">
         <nav className="flex items-center gap-1 overflow-x-auto border-b border-border px-3 py-2 md:hidden">
-          <Link to="/" className="mr-1 flex shrink-0 items-center gap-1.5 border-r border-border pr-2">
+          <Link
+            to="/"
+            className="mr-1 flex shrink-0 items-center gap-1.5 border-r border-border pr-2"
+          >
             <img src="/logo.png" alt="Queiroz Bolos" className="size-6 rounded-full object-cover" />
           </Link>
           {links.map((l) => (
