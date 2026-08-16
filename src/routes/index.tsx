@@ -125,7 +125,11 @@ function Index() {
       <header className="sticky top-0 z-20 -mx-5 border-b border-border bg-background/85 px-5 py-4 backdrop-blur">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Queiroz Bolos" className="size-10 rounded-full object-cover border border-border shrink-0" />
+            <img
+              src="/logo.png"
+              alt="Queiroz Bolos"
+              className="size-10 rounded-full object-cover border border-border shrink-0"
+            />
             <div>
               <h1 className="text-lg font-semibold leading-tight">Queiroz Bolos</h1>
               <p className="text-xs text-muted-foreground">Bolos inteiros ou metade</p>
@@ -508,7 +512,9 @@ function Carrinho({
           {formaPagamento === "dinheiro" && (
             <div className="mt-3 rounded-lg border border-border bg-background p-3">
               <label className="block space-y-1.5">
-                <span className="text-xs text-muted-foreground">Vai pagar com quanto? (opcional)</span>
+                <span className="text-xs text-muted-foreground">
+                  Vai pagar com quanto? (opcional)
+                </span>
                 <input
                   inputMode="decimal"
                   placeholder="Ex: 50"
