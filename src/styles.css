@@ -68,7 +68,7 @@
   --popover-foreground: oklch(0.22 0.004 90);
 
   /* verde floresta #1A472A */
-  --primary: oklch(0.36 0.083 155);
+  --primary: oklch(26.608% 0.09318 26.294);
   --primary-foreground: oklch(0.99 0.005 95);
   --primary-soft: oklch(0.36 0.083 155 / 10%);
 
@@ -94,7 +94,7 @@
 
   --border: oklch(0.22 0.01 95 / 10%);
   --input: oklch(0.22 0.01 95 / 14%);
-  --ring: oklch(0.36 0.083 155);
+  --ring: oklch(25.69% 0.10542 29.223);
 
   --sidebar: oklch(0.975 0.014 92);
   --sidebar-foreground: oklch(0.22 0.004 90);
