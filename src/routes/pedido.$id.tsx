@@ -1,3 +1,4 @@
+import { PixQrCode } from "@/components/ui/pix-qrcode";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Store, Truck } from "lucide-react";
@@ -90,6 +91,18 @@ function AcompanharPedido() {
                 );
               })}
             </ol>
+
+            {pedido.forma_pagamento === "pix" && !pedido.pagamento_confirmado && (
+              <div className="mt-5 border-t border-border pt-4">
+                <p className="mb-3 text-sm font-medium">Pagamento via PIX</p>
+                <PixQrCode valor={pedido.total} identificador={pedido.id} />
+              </div>
+            )}
+            {pedido.forma_pagamento === "pix" && pedido.pagamento_confirmado && (
+              <p className="mt-5 rounded-lg border border-success/25 bg-success/10 p-3 text-center text-sm text-success">
+                Pagamento PIX confirmado ✓
+              </p>
+            )}
 
             <div className="mt-5 flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-4 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">

@@ -41,8 +41,15 @@ function VendaBalcao() {
 
   const [itens, setItens] = useState<NovoItem[]>([]);
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>("dinheiro");
+  const [valorRecebido, setValorRecebido] = useState("");
 
   const total = itens.reduce((a, i) => a + precoPorTamanho(i.produto, i.tamanho) * i.quantidade, 0);
+
+  const valorRecebidoNumero = Number(valorRecebido.replace(",", "."));
+  const dinheiroInsuficiente =
+    formaPagamento === "dinheiro" &&
+    valorRecebido.trim() !== "" &&
+    valorRecebidoNumero < total;
 
   function adicionar(produto: Produto, tamanho: Tamanho) {
     setItens((atual) => {
@@ -75,6 +82,7 @@ function VendaBalcao() {
     onSuccess: () => {
       toast.success("Venda registrada!");
       setItens([]);
+      setValorRecebido("");
       queryClient.invalidateQueries();
     },
     onError: (err) => {
@@ -211,9 +219,36 @@ function VendaBalcao() {
                 </div>
               </div>
 
+              {formaPagamento === "dinheiro" && (
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <label className="block space-y-1.5">
+                    <span className="text-xs text-muted-foreground">Valor recebido</span>
+                    <input
+                      inputMode="decimal"
+                      placeholder="Ex: 100"
+                      value={valorRecebido}
+                      onChange={(e) => setValorRecebido(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+                    />
+                  </label>
+                  {valorRecebido && (
+                    <p
+                      className={cn(
+                        "mt-2 text-sm font-medium",
+                        valorRecebidoNumero < total ? "text-destructive" : "text-success",
+                      )}
+                    >
+                      {valorRecebidoNumero < total
+                        ? "Valor insuficiente."
+                        : `Troco: ${brl(valorRecebidoNumero - total)}`}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <button
                 type="button"
-                disabled={registrar.isPending}
+                disabled={registrar.isPending || dinheiroInsuficiente}
                 onClick={() => registrar.mutate()}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
               >

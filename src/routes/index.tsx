@@ -355,12 +355,17 @@ function Carrinho({
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("retirada");
   const [endereco, setEndereco] = useState("");
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>("pix");
+  const [valorRecebido, setValorRecebido] = useState("");
 
   const total = itens.reduce((a, i) => a + precoPorTamanho(i.produto, i.tamanho) * i.quantidade, 0);
   const podeEnviar =
     itens.length > 0 &&
     nome.trim().length > 0 &&
     (tipoEntrega === "retirada" || endereco.trim().length > 0);
+
+  const valorRecebidoNumero = Number(valorRecebido.replace(",", "."));
+  const trocoInsuficiente =
+    formaPagamento === "dinheiro" && valorRecebido !== "" && valorRecebidoNumero < total;
 
   if (itens.length === 0) {
     return (
@@ -499,12 +504,45 @@ function Carrinho({
               </button>
             ))}
           </div>
+
+          {formaPagamento === "dinheiro" && (
+            <div className="mt-3 rounded-lg border border-border bg-background p-3">
+              <label className="block space-y-1.5">
+                <span className="text-xs text-muted-foreground">Vai pagar com quanto? (opcional)</span>
+                <input
+                  inputMode="decimal"
+                  placeholder="Ex: 50"
+                  value={valorRecebido}
+                  onChange={(e) => setValorRecebido(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+                />
+              </label>
+              {valorRecebido && (
+                <p
+                  className={cn(
+                    "mt-2 text-sm",
+                    valorRecebidoNumero < total ? "text-destructive" : "text-success",
+                  )}
+                >
+                  {valorRecebidoNumero < total
+                    ? "Valor insuficiente para o total do pedido."
+                    : `Troco: ${brl(valorRecebidoNumero - total)}`}
+                </p>
+              )}
+            </div>
+          )}
+
+          {formaPagamento === "pix" && (
+            <p className="mt-3 rounded-lg border border-border bg-background p-3 text-xs text-muted-foreground">
+              O QR Code do PIX aparece na próxima tela, assim que o pedido for enviado.
+            </p>
+          )}
         </div>
       </div>
 
       <button
         type="button"
-        disabled={!podeEnviar || enviando}
+        disabled={!podeEnviar || enviando || trocoInsuficiente}
         onClick={() => onFinalizar({ nome, telefone, tipoEntrega, endereco, formaPagamento })}
         className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
       >

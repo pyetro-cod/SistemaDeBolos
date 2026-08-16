@@ -44,6 +44,7 @@ export type Pedido = {
   total: number;
   origem: Origem;
   visualizado: boolean;
+  pagamento_confirmado: boolean; // NOVO
   criado_em: string;
   atualizado_em: string;
   itens_pedido?: ItemPedido[];
@@ -347,5 +348,13 @@ export async function salvarProduto(
 
 export async function excluirProduto(id: string) {
   const { error } = await db.from("produtos").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function confirmarPagamentoPix(pedidoId: string) {
+  const { error } = await db
+    .from("pedidos")
+    .update({ pagamento_confirmado: true })
+    .eq("id", pedidoId);
   if (error) throw error;
 }

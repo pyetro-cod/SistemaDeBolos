@@ -1,3 +1,4 @@
+import { confirmarPagamentoPix } from "@/lib/cardapio";
 import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -47,7 +48,17 @@ function Pedidos() {
     },
   });
 
-  const naoVistos = pedidos.filter((p) => p.status === "recebido" && !p.visualizado).map((p) => p.id);
+  const confirmarPix = useMutation({
+    mutationFn: confirmarPagamentoPix,
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+      toast.success("Pagamento PIX confirmado");
+    },
+  });
+
+  const naoVistos = pedidos
+    .filter((p) => p.status === "recebido" && !p.visualizado)
+    .map((p) => p.id);
 
   useEffect(() => {
     if (naoVistos.length === 0) return;
@@ -61,9 +72,7 @@ function Pedidos() {
   return (
     <main className="px-6 py-8">
       <h1 className="text-2xl">Pedidos ativos</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {pedidos.length} pedido(s) em andamento.
-      </p>
+      <p className="mt-1 text-sm text-muted-foreground">{pedidos.length} pedido(s) em andamento.</p>
 
       <div className="mt-6 space-y-3">
         {pedidos.length === 0 && (
@@ -88,6 +97,19 @@ function Pedidos() {
                 )}
                 <span className="text-sm font-semibold">{pedido.nome_cliente || "Cliente"}</span>
                 <StatusPedido status={pedido.status} tipoEntrega={pedido.tipo_entrega} />
+                {pedido.forma_pagamento === "pix" && !pedido.pagamento_confirmado && (
+                  <button
+                    onClick={() => confirmarPix.mutate(pedido.id)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-[11px] font-medium text-warning transition-colors hover:bg-warning/20"
+                  >
+                    Confirmar PIX
+                  </button>
+                )}
+                {pedido.forma_pagamento === "pix" && pedido.pagamento_confirmado && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-success/25 bg-success/10 px-2 py-0.5 text-[11px] text-success">
+                    PIX confirmado
+                  </span>
+                )}
                 <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                   {pedido.tipo_entrega === "entrega" ? (
                     <Truck className="size-3.5" strokeWidth={1.5} />
