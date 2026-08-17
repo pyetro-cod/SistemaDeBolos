@@ -343,6 +343,11 @@ function CardProduto({
   );
 }
 
+type DadosClienteCarrinho = DadosCliente & {
+  bairro?: string;
+  taxaEntrega?: number;
+};
+
 function Carrinho({
   itens,
   onAlterarQtd,
@@ -351,23 +356,56 @@ function Carrinho({
 }: {
   itens: ItemCarrinho[];
   onAlterarQtd: (produtoId: string, tamanho: Tamanho, delta: number) => void;
-  onFinalizar: (dados: DadosCliente) => void;
+  onFinalizar: (dados: DadosClienteCarrinho) => void;
   enviando: boolean;
 }) {
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("retirada");
   const [endereco, setEndereco] = useState("");
+  const [bairro, setBairro] = useState("");
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>("pix");
   const [valorRecebido, setValorRecebido] = useState("");
 
-  const total = itens.reduce((a, i) => a + precoPorTamanho(i.produto, i.tamanho) * i.quantidade, 0);
+  // Taxas de entrega por bairro
+  const TAXAS_ENTREGA: Record<string, number> = {
+    "Alto Alegre": 2,
+    Pedregal: 2,
+    Centro: 2,
+    "Santa Rosa": 2,
+    Oriente: 2,
+    Renascer: 2,
+    "Alto do Jorge": 2,
+    Mandacaru: 3,
+    "Zé Marcolino": 2,
+    "Alto da Caixa d'Água": 2,
+    "Conjunto Habitacional Sebastião Vitorino": 2,
+    Alvorada: 3,
+    "Conjunto Habitacional Pedro Ferreira Filho": 3,
+    "Carro Quebrado": 3,
+    "Frei Damião": 2,
+    "Várzea Redonda": 3,
+  };
+
+  // Soma apenas os produtos
+  const subtotal = itens.reduce(
+    (a, i) => a + precoPorTamanho(i.produto, i.tamanho) * i.quantidade,
+    0,
+  );
+
+  // Calcula a taxa somente quando for entrega
+  const taxaEntrega = tipoEntrega === "entrega" && bairro ? (TAXAS_ENTREGA[bairro] ?? 0) : 0;
+
+  // Total final = produtos + entrega
+  const total = subtotal + taxaEntrega;
+
   const podeEnviar =
     itens.length > 0 &&
     nome.trim().length > 0 &&
-    (tipoEntrega === "retirada" || endereco.trim().length > 0);
+    (tipoEntrega === "retirada" || (bairro.trim().length > 0 && endereco.trim().length > 0));
 
   const valorRecebidoNumero = Number(valorRecebido.replace(",", "."));
+
   const trocoInsuficiente =
     formaPagamento === "dinheiro" && valorRecebido !== "" && valorRecebidoNumero < total;
 
@@ -385,11 +423,13 @@ function Carrinho({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">{item.produto.nome}</p>
+
                 <p className="text-xs text-muted-foreground">
                   {item.tamanho === "inteiro" ? "Inteiro" : "Metade"} ·{" "}
                   {brl(precoPorTamanho(item.produto, item.tamanho) * item.quantidade)}
                 </p>
               </div>
+
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => onAlterarQtd(item.produto.id, item.tamanho, -1)}
@@ -402,7 +442,9 @@ function Carrinho({
                     <Minus className="mx-auto size-3.5" strokeWidth={1.5} />
                   )}
                 </button>
+
                 <span className="w-5 text-center text-sm">{item.quantidade}</span>
+
                 <button
                   onClick={() => onAlterarQtd(item.produto.id, item.tamanho, 1)}
                   aria-label="Aumentar"
@@ -416,22 +458,45 @@ function Carrinho({
         ))}
       </div>
 
-      <div className="flex items-center justify-between border-t border-border pt-3">
-        <span className="text-sm text-muted-foreground">Total</span>
-        <span className="text-lg font-semibold">{brl(total)}</span>
+      {/* RESUMO DO VALOR */}
+      <div className="space-y-2 border-t border-border pt-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Subtotal</span>
+
+          <span className="text-sm">{brl(subtotal)}</span>
+        </div>
+
+        {tipoEntrega === "entrega" && bairro && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Taxa de entrega</span>
+
+            <span className="text-sm">{brl(taxaEntrega)}</span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between border-t border-border pt-2">
+          <span className="text-sm font-medium">Total</span>
+
+          <span className="text-lg font-semibold">{brl(total)}</span>
+        </div>
       </div>
 
       <div className="space-y-3 border-t border-border pt-4">
+        {/* NOME */}
         <label className="block space-y-1.5">
           <span className="text-xs text-muted-foreground">Seu nome</span>
+
           <input
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
           />
         </label>
+
+        {/* TELEFONE */}
         <label className="block space-y-1.5">
           <span className="text-xs text-muted-foreground">Telefone (opcional)</span>
+
           <input
             value={telefone}
             onChange={(e) => setTelefone(e.target.value)}
@@ -439,12 +504,18 @@ function Carrinho({
           />
         </label>
 
+        {/* TIPO DE ENTREGA */}
         <div>
           <span className="text-xs text-muted-foreground">Entrega</span>
+
           <div className="mt-1.5 flex gap-2">
             <button
               type="button"
-              onClick={() => setTipoEntrega("retirada")}
+              onClick={() => {
+                setTipoEntrega("retirada");
+                setBairro("");
+                setEndereco("");
+              }}
               className={cn(
                 "flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
                 tipoEntrega === "retirada"
@@ -455,6 +526,7 @@ function Carrinho({
               <Store className="size-4" strokeWidth={1.5} />
               Retirar na loja
             </button>
+
             <button
               type="button"
               onClick={() => setTipoEntrega("entrega")}
@@ -471,25 +543,73 @@ function Carrinho({
           </div>
         </div>
 
+        {/* BAIRRO E ENDEREÇO */}
         {tipoEntrega === "entrega" && (
-          <label className="block space-y-1.5">
-            <span className="text-xs text-muted-foreground">Endereço</span>
-            <input
-              value={endereco}
-              onChange={(e) => setEndereco(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
-            />
-          </label>
+          <div className="space-y-3">
+            {/* BAIRRO */}
+            <label className="block space-y-1.5">
+              <span className="text-xs text-muted-foreground">Bairro</span>
+
+              <select
+                value={bairro}
+                onChange={(e) => setBairro(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+              >
+                <option value="">Selecione o bairro</option>
+
+                {Object.entries(TAXAS_ENTREGA).map(([nomeBairro, taxa]) => (
+                  <option key={nomeBairro} value={nomeBairro}>
+                    {nomeBairro} - {brl(taxa)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {/* ENDEREÇO */}
+            <label className="block space-y-1.5">
+              <span className="text-xs text-muted-foreground">Endereço</span>
+
+              <input
+                value={endereco}
+                onChange={(e) => setEndereco(e.target.value)}
+                placeholder="Rua, número e complemento"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+              />
+            </label>
+
+            {/* TAXA */}
+            {bairro && (
+              <div className="flex items-center justify-between rounded-lg border border-border bg-background p-3">
+                <span className="text-sm text-muted-foreground">Taxa de entrega</span>
+
+                <span className="text-sm font-semibold">{brl(taxaEntrega)}</span>
+              </div>
+            )}
+          </div>
         )}
 
+        {/* FORMA DE PAGAMENTO */}
         <div>
           <span className="text-xs text-muted-foreground">Forma de pagamento</span>
+
           <div className="mt-1.5 grid grid-cols-3 gap-2">
             {(
               [
-                { id: "pix", label: "Pix", icon: Landmark },
-                { id: "cartao", label: "Cartão", icon: CreditCard },
-                { id: "dinheiro", label: "Dinheiro", icon: Banknote },
+                {
+                  id: "pix",
+                  label: "Pix",
+                  icon: Landmark,
+                },
+                {
+                  id: "cartao",
+                  label: "Cartão",
+                  icon: CreditCard,
+                },
+                {
+                  id: "dinheiro",
+                  label: "Dinheiro",
+                  icon: Banknote,
+                },
               ] as const
             ).map((op) => (
               <button
@@ -504,17 +624,20 @@ function Carrinho({
                 )}
               >
                 <op.icon className="size-4" strokeWidth={1.5} />
+
                 {op.label}
               </button>
             ))}
           </div>
 
+          {/* DINHEIRO */}
           {formaPagamento === "dinheiro" && (
             <div className="mt-3 rounded-lg border border-border bg-background p-3">
               <label className="block space-y-1.5">
                 <span className="text-xs text-muted-foreground">
                   Vai pagar com quanto? (opcional)
                 </span>
+
                 <input
                   inputMode="decimal"
                   placeholder="Ex: 50"
@@ -523,6 +646,7 @@ function Carrinho({
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
                 />
               </label>
+
               {valorRecebido && (
                 <p
                   className={cn(
@@ -538,6 +662,7 @@ function Carrinho({
             </div>
           )}
 
+          {/* PIX */}
           {formaPagamento === "pix" && (
             <p className="mt-3 rounded-lg border border-border bg-background p-3 text-xs text-muted-foreground">
               O QR Code do PIX aparece na próxima tela, assim que o pedido for enviado.
@@ -546,10 +671,21 @@ function Carrinho({
         </div>
       </div>
 
+      {/* FINALIZAR PEDIDO */}
       <button
         type="button"
         disabled={!podeEnviar || enviando || trocoInsuficiente}
-        onClick={() => onFinalizar({ nome, telefone, tipoEntrega, endereco, formaPagamento })}
+        onClick={() =>
+          onFinalizar({
+            nome,
+            telefone,
+            tipoEntrega,
+            endereco,
+            bairro,
+            taxaEntrega,
+            formaPagamento,
+          })
+        }
         className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         Finalizar pedido
