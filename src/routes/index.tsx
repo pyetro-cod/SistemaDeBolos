@@ -364,6 +364,8 @@ function Carrinho({
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("retirada");
   const [endereco, setEndereco] = useState("");
   const [bairro, setBairro] = useState("");
+  const [numero, setNumero] = useState("");
+  const [complemento, setComplemento] = useState("");
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>("pix");
   const [valorRecebido, setValorRecebido] = useState("");
 
@@ -402,7 +404,8 @@ function Carrinho({
   const podeEnviar =
     itens.length > 0 &&
     nome.trim().length > 0 &&
-    (tipoEntrega === "retirada" || (bairro.trim().length > 0 && endereco.trim().length > 0));
+    (tipoEntrega === "retirada" ||
+      (bairro.trim().length > 0 && endereco.trim().length > 0 && numero.trim().length > 0));
 
   const valorRecebidoNumero = Number(valorRecebido.replace(",", "."));
 
@@ -503,6 +506,46 @@ function Carrinho({
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
           />
         </label>
+        {/* ENDEREÇO */}
+        <div className="space-y-3">
+          <label className="block space-y-1.5">
+            <span className="text-xs text-muted-foreground">Rua / Avenida</span>
+
+            <input
+              value={endereco}
+              onChange={(e) => setEndereco(e.target.value)}
+              placeholder="Digite sua rua ou avenida"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+            />
+          </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* NÚMERO */}
+            <label className="block space-y-1.5">
+              <span className="text-xs text-muted-foreground">Número</span>
+
+              <input
+                value={numero}
+                onChange={(e) => setNumero(e.target.value)}
+                placeholder="Ex: 123"
+                inputMode="numeric"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+              />
+            </label>
+
+            {/* COMPLEMENTO */}
+            <label className="block space-y-1.5">
+              <span className="text-xs text-muted-foreground">Complemento</span>
+
+              <input
+                value={complemento}
+                onChange={(e) => setComplemento(e.target.value)}
+                placeholder="Casa, apto..."
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+              />
+            </label>
+          </div>
+        </div>
 
         {/* TIPO DE ENTREGA */}
         <div>
