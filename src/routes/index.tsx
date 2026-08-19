@@ -56,10 +56,24 @@ type ItemCarrinho = NovoItem;
 
 function Index() {
   const navigate = useNavigate();
-  const { data: produtos = [] } = useQuery({
-    queryKey: ["produtos", "ativos"],
-    queryFn: () => fetchProdutos(true),
-  });
+
+  const produtos = useMemo(
+    () =>
+      [
+        {
+          id: "1",
+          nome: "Bolo de Chocolate",
+          categoria: "Bolos",
+          descricao: "Bolo de chocolate",
+          preco_inteiro: 40,
+          preco_metade: 8,
+          estoque_meios: 4,
+          foto_url: "",
+          tags: [],
+        },
+      ] as Produto[],
+    [],
+  );
 
   const categorias = useMemo(
     () => Array.from(new Set(produtos.map((p) => p.categoria))),
@@ -377,6 +391,7 @@ function Carrinho({
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>("pix");
 
   const [valorRecebido, setValorRecebido] = useState("");
+  const [precisaTroco, setPrecisaTroco] = useState<"sim" | "nao" | "">("");
 
   // Taxas de entrega por bairro
   const TAXAS_ENTREGA: Record<string, number> = {
@@ -424,7 +439,9 @@ function Carrinho({
   const valorRecebidoNumero = Number(valorRecebido.replace(",", "."));
 
   const trocoInsuficiente =
-    formaPagamento === "dinheiro" && valorRecebido !== "" && valorRecebidoNumero < total;
+    formaPagamento === "dinheiro" &&
+    precisaTroco === "sim" &&
+    (valorRecebido === "" || valorRecebidoNumero < total);
 
   if (itens.length === 0) {
     return (
@@ -740,31 +757,71 @@ function Carrinho({
 
           {formaPagamento === "dinheiro" && (
             <div className="mt-3 rounded-lg border border-border bg-background p-3">
-              <label className="block space-y-1.5">
-                <span className="text-xs text-muted-foreground">
-                  Vai pagar com quanto? (opcional)
-                </span>
+              <div className="space-y-2">
+                <span className="text-xs text-muted-foreground">Vai precisar de troco?</span>
 
-                <input
-                  inputMode="decimal"
-                  placeholder="Ex: 50"
-                  value={valorRecebido}
-                  onChange={(e) => setValorRecebido(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
-                />
-              </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrecisaTroco("sim");
+                      setValorRecebido("");
+                    }}
+                    className={cn(
+                      "rounded-lg border px-3 py-2 text-sm transition-colors",
+                      precisaTroco === "sim"
+                        ? "border-primary/40 bg-primary-soft text-primary"
+                        : "border-border text-muted-foreground hover:bg-accent",
+                    )}
+                  >
+                    Sim
+                  </button>
 
-              {valorRecebido && (
-                <p
-                  className={cn(
-                    "mt-2 text-sm",
-                    valorRecebidoNumero < total ? "text-destructive" : "text-success",
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrecisaTroco("nao");
+                      setValorRecebido("");
+                    }}
+                    className={cn(
+                      "rounded-lg border px-3 py-2 text-sm transition-colors",
+                      precisaTroco === "nao"
+                        ? "border-primary/40 bg-primary-soft text-primary"
+                        : "border-border text-muted-foreground hover:bg-accent",
+                    )}
+                  >
+                    Não
+                  </button>
+                </div>
+              </div>
+
+              {precisaTroco === "sim" && (
+                <div className="mt-3 space-y-2">
+                  <label className="block space-y-1.5">
+                    <span className="text-xs text-muted-foreground">Vai pagar com quanto?</span>
+
+                    <input
+                      inputMode="decimal"
+                      placeholder="Ex: 50"
+                      value={valorRecebido}
+                      onChange={(e) => setValorRecebido(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+                    />
+                  </label>
+
+                  {valorRecebido && (
+                    <p
+                      className={cn(
+                        "text-sm font-medium",
+                        valorRecebidoNumero < total ? "text-destructive" : "text-success",
+                      )}
+                    >
+                      {valorRecebidoNumero < total
+                        ? "O valor informado é menor que o total do pedido."
+                        : `Troco: ${brl(valorRecebidoNumero - total)}`}
+                    </p>
                   )}
-                >
-                  {valorRecebidoNumero < total
-                    ? "Valor insuficiente para o total do pedido."
-                    : `Troco: ${brl(valorRecebidoNumero - total)}`}
-                </p>
+                </div>
               )}
             </div>
           )}
