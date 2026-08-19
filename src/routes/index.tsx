@@ -238,7 +238,7 @@ function CardProduto({
   onAdicionar: (produto: Produto, tamanho: Tamanho, quantidade: number) => void;
 }) {
   const [tamanho, setTamanho] = useState<Tamanho>("inteiro");
-  const [quantidade, setQuantidade] = useState(1);
+  const [quantidade, setQuantidade] = useState(0);
 
   const preco = precoPorTamanho(produto, tamanho);
   const semEstoque = !disponivelPorTamanho(produto, tamanho);
@@ -285,7 +285,7 @@ function CardProduto({
                 disabled={!disponivel}
                 onClick={() => {
                   setTamanho(t);
-                  setQuantidade(1);
+                  setQuantidade(0);
                 }}
                 className={cn(
                   "flex-1 rounded-lg border px-2 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40",
@@ -310,7 +310,7 @@ function CardProduto({
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
+              onClick={() => setQuantidade((q) => Math.max(0, q - 1))}
               aria-label="Diminuir quantidade"
               className="size-8 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent"
             >
@@ -328,10 +328,10 @@ function CardProduto({
           </div>
           <button
             type="button"
-            disabled={semEstoque}
+            disabled={semEstoque || quantidade === 0}
             onClick={() => {
               onAdicionar(produto, tamanho, quantidade);
-              setQuantidade(1);
+              setQuantidade(0);
             }}
             className="flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
