@@ -56,24 +56,10 @@ type ItemCarrinho = NovoItem;
 
 function Index() {
   const navigate = useNavigate();
-
-  const produtos = useMemo(
-    () =>
-      [
-        {
-          id: "1",
-          nome: "Bolo de Chocolate",
-          categoria: "Bolos",
-          descricao: "Bolo de chocolate",
-          preco_inteiro: 40,
-          preco_metade: 8,
-          estoque_meios: 4,
-          foto_url: "",
-          tags: [],
-        },
-      ] as Produto[],
-    [],
-  );
+  const { data: produtos = [] } = useQuery({
+    queryKey: ["produtos", "ativos"],
+    queryFn: () => fetchProdutos(true),
+  });
 
   const categorias = useMemo(
     () => Array.from(new Set(produtos.map((p) => p.categoria))),
