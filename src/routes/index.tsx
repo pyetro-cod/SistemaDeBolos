@@ -104,7 +104,7 @@ function Index() {
   }
 
   const criar = useMutation({
-    mutationFn: (dados: DadosCliente) => criarPedido(dados, carrinho),
+    mutationFn: (dados: DadosClienteCarrinho) => criarPedido(dados, carrinho),
     onSuccess: (id) => {
       toast.success("Pedido enviado!");
       navigate({ to: "/pedido/$id", params: { id } });
@@ -350,8 +350,14 @@ type DadosClienteCarrinho = DadosCliente & {
   referencia?: string;
   taxaEntrega?: number;
   formaPagamento?: FormaPagamento;
-};
 
+  precisaTroco?: "sim" | "nao" | "";
+  valorRecebido?: number | null;
+  troco?: number | null;
+
+  subtotal?: number;
+  total?: number;
+};
 function Carrinho({
   itens,
   onAlterarQtd,
@@ -835,14 +841,33 @@ function Carrinho({
           onFinalizar({
             nome,
             telefone,
+
             tipoEntrega,
+
             endereco,
             numero,
             complemento,
             bairro,
             referencia,
+
             taxaEntrega,
+
             formaPagamento,
+
+            precisaTroco: formaPagamento === "dinheiro" ? precisaTroco : "",
+
+            valorRecebido:
+              formaPagamento === "dinheiro" && precisaTroco === "sim" ? valorRecebidoNumero : null,
+
+            troco:
+              formaPagamento === "dinheiro" &&
+              precisaTroco === "sim" &&
+              valorRecebidoNumero >= total
+                ? valorRecebidoNumero - total
+                : null,
+
+            subtotal,
+            total,
           })
         }
         className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
