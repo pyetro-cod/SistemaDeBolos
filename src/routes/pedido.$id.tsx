@@ -104,17 +104,87 @@ function AcompanharPedido() {
               </p>
             )}
 
-            <div className="mt-5 flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-4 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                {pedido.tipo_entrega === "entrega" ? (
-                  <Truck className="size-3.5" strokeWidth={1.5} />
-                ) : (
-                  <Store className="size-3.5" strokeWidth={1.5} />
-                )}
-                {TIPO_ENTREGA_LABEL[pedido.tipo_entrega]}
-              </span>
-              {pedido.endereco && <span>{pedido.endereco}</span>}
-              <span>Pagamento: {FORMA_PAGAMENTO_LABEL[pedido.forma_pagamento]}</span>
+            <div className="mt-5 space-y-4 border-t border-border pt-4">
+              {/* CLIENTE */}
+              <div>
+                <h3 className="text-sm font-semibold">Dados do cliente</h3>
+
+                <div className="mt-3 space-y-2 text-sm">
+                  <div>
+                    <span className="text-xs text-muted-foreground">Nome</span>
+                    <p className="font-medium">{pedido.nome_cliente}</p>
+                  </div>
+
+                  <div>
+                    <span className="text-xs text-muted-foreground">Telefone</span>
+                    <p>{pedido.telefone}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* TIPO DE ENTREGA */}
+              <div className="border-t border-border pt-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  {pedido.tipo_entrega === "entrega" ? (
+                    <Truck className="size-4" strokeWidth={1.5} />
+                  ) : (
+                    <Store className="size-4" strokeWidth={1.5} />
+                  )}
+
+                  {TIPO_ENTREGA_LABEL[pedido.tipo_entrega]}
+                </div>
+              </div>
+
+              {/* ENDEREÇO DE ENTREGA */}
+              {pedido.tipo_entrega === "entrega" && (
+                <div className="border-t border-border pt-4">
+                  <h3 className="text-sm font-semibold">Endereço de entrega</h3>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Informe os dados para receber seu pedido.
+                  </p>
+
+                  <div className="mt-3 space-y-3 text-sm">
+                    {/* RUA */}
+                    <div>
+                      <span className="text-xs text-muted-foreground">Rua / Avenida</span>
+                      <p>{pedido.endereco || "Não informado"}</p>
+                    </div>
+
+                    {/* NÚMERO + COMPLEMENTO */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-xs text-muted-foreground">Número</span>
+                        <p>{pedido.numero || "Não informado"}</p>
+                      </div>
+
+                      <div>
+                        <span className="text-xs text-muted-foreground">Complemento</span>
+                        <p>{pedido.complemento || "Não informado"}</p>
+                      </div>
+                    </div>
+
+                    {/* BAIRRO */}
+                    <div>
+                      <span className="text-xs text-muted-foreground">Bairro</span>
+                      <p>{pedido.bairro || "Não informado"}</p>
+                    </div>
+
+                    {/* REFERÊNCIA */}
+                    <div>
+                      <span className="text-xs text-muted-foreground">Ponto de referência</span>
+                      <p>{pedido.referencia || "Não informado"}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PAGAMENTO */}
+              <div className="border-t border-border pt-4">
+                <span className="text-xs text-muted-foreground">Forma de pagamento</span>
+
+                <p className="mt-1 text-sm">{FORMA_PAGAMENTO_LABEL[pedido.forma_pagamento]}</p>
+              </div>
             </div>
 
             <ul className="mt-4 space-y-1.5 border-t border-border pt-3">
