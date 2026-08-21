@@ -38,15 +38,23 @@ export type Pedido = {
   status: PedidoStatus;
   nome_cliente: string;
   telefone: string | null;
+
   tipo_entrega: TipoEntrega;
+
   endereco: string | null;
+  numero: string | null;
+  complemento: string | null;
+  bairro: string | null;
+  referencia: string | null;
+
   forma_pagamento: FormaPagamento;
   total: number;
   origem: Origem;
   visualizado: boolean;
-  pagamento_confirmado: boolean; // NOVO
+  pagamento_confirmado: boolean;
   criado_em: string;
   atualizado_em: string;
+
   itens_pedido?: ItemPedido[];
 };
 
@@ -250,6 +258,10 @@ export type DadosCliente = {
   telefone: string;
   tipoEntrega: TipoEntrega;
   endereco?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  referencia?: string;
   formaPagamento: FormaPagamento;
 };
 
@@ -267,11 +279,23 @@ export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
     p_nome_cliente: cliente.nome,
     p_telefone: cliente.telefone || null,
     p_tipo_entrega: cliente.tipoEntrega,
+
     p_endereco: cliente.tipoEntrega === "entrega" ? cliente.endereco || null : null,
+
+    p_numero: cliente.tipoEntrega === "entrega" ? cliente.numero || null : null,
+
+    p_complemento: cliente.tipoEntrega === "entrega" ? cliente.complemento || null : null,
+
+    p_bairro: cliente.tipoEntrega === "entrega" ? cliente.bairro || null : null,
+
+    p_referencia: cliente.tipoEntrega === "entrega" ? cliente.referencia || null : null,
+
     p_forma_pagamento: cliente.formaPagamento,
     p_itens: itensParaPayload(itens),
   });
+
   if (error) throw error;
+
   return data as string;
 }
 
