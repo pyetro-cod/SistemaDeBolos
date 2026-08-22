@@ -138,6 +138,17 @@ export function calcularMetricas(pedidos: Pedido[]): Metricas {
   };
 }
 
+
+/** PIX só conta pro relatório se o pagamento já foi confirmado; outras formas contam sempre. */
+export function pedidoValidoParaRelatorio(pedido: Pedido) {
+  if (pedido.forma_pagamento === "pix") return pedido.pagamento_confirmado;
+  return true;
+}
+
+export function filtrarPedidosValidos(pedidos: Pedido[]) {
+  return pedidos.filter(pedidoValidoParaRelatorio);
+}
+
 export type FaturamentoMes = { mes: string; label: string; total: number };
 
 export function faturamentoUltimosMeses(
