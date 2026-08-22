@@ -66,6 +66,18 @@ export type Pedido = {
   itens_pedido?: ItemPedido[];
 };
 
+
+
+/** PIX só conta pro relatório se o pagamento já foi confirmado; outras formas contam sempre. */
+export function pedidoValidoParaRelatorio(pedido: Pedido) {
+  if (pedido.forma_pagamento === "pix") return pedido.pagamento_confirmado;
+  return true;
+}
+
+export function filtrarPedidosValidos(pedidos: Pedido[]) {
+  return pedidos.filter(pedidoValidoParaRelatorio);
+}
+
 export const STATUS_FLUXO: PedidoStatus[] = ["recebido", "preparo", "pronto", "entregue"];
 
 export const STATUS_LABEL: Record<PedidoStatus, string> = {

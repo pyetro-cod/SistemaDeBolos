@@ -1,7 +1,15 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, ChevronLeft, ChevronRight, Receipt, TrendingUp, Wallet, Flame } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Receipt,
+  TrendingUp,
+  Wallet,
+  Flame,
+} from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { addMonths, subMonths } from "date-fns";
 import { fetchPedidosPorPeriodo, brl, FORMA_PAGAMENTO_LABEL } from "@/lib/cardapio";
@@ -9,6 +17,7 @@ import {
   calcularIntervalo,
   calcularMetricas,
   faturamentoUltimosMeses,
+  filtrarPedidosValidos,
   rotuloIntervalo,
 } from "@/lib/relatorios";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -38,16 +47,24 @@ function FaturamentoMensal() {
   });
 
   // range maior (6 meses) só para o gráfico histórico
-  const inicioHistorico = useMemo(() => calcularIntervalo("mes", subMonths(referencia, 5)).inicio, [referencia]);
+  const inicioHistorico = useMemo(
+    () => calcularIntervalo("mes", subMonths(referencia, 5)).inicio,
+    [referencia],
+  );
   const { data: pedidosHistorico = [] } = useQuery({
     queryKey: ["pedidos", "periodo", "historico", inicioHistorico.toISOString(), fim.toISOString()],
     queryFn: () => fetchPedidosPorPeriodo(inicioHistorico, fim),
   });
 
-  const metricas = useMemo(() => calcularMetricas(pedidosDoMes), [pedidosDoMes]);
+  const pedidosDoMesValidos = useMemo(() => filtrarPedidosValidos(pedidosDoMes), [pedidosDoMes]);
+  const pedidosHistoricoValidos = useMemo(
+    () => filtrarPedidosValidos(pedidosHistorico),
+    [pedidosHistorico],
+  );
+  const metricas = useMemo(() => calcularMetricas(pedidosDoMesValidos), [pedidosDoMesValidos]);
   const historico = useMemo(
-    () => faturamentoUltimosMeses(pedidosHistorico, 6, referencia),
-    [pedidosHistorico, referencia],
+    () => faturamentoUltimosMeses(pedidosHistoricoValidos, 6, referencia),
+    [pedidosHistoricoValidos, referencia],
   );
 
   const cards = [

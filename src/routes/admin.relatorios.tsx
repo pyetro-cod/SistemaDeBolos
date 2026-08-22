@@ -1,12 +1,21 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, ChevronLeft, ChevronRight, Receipt, TrendingUp, Truck, Store } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Receipt,
+  TrendingUp,
+  Truck,
+  Store,
+} from "lucide-react";
 import { fetchPedidosPorPeriodo, brl } from "@/lib/cardapio";
 import {
   calcularIntervalo,
   calcularMetricas,
   deslocarReferencia,
+  filtrarPedidosValidos,
   rotuloIntervalo,
   PERIODO_LABEL,
   type Periodo,
@@ -34,14 +43,18 @@ function Relatorios() {
   const [periodo, setPeriodo] = useState<Periodo>("dia");
   const [referencia, setReferencia] = useState(() => new Date());
 
-  const { inicio, fim } = useMemo(() => calcularIntervalo(periodo, referencia), [periodo, referencia]);
+  const { inicio, fim } = useMemo(
+    () => calcularIntervalo(periodo, referencia),
+    [periodo, referencia],
+  );
 
   const { data: pedidosDoPeriodo = [] } = useQuery({
     queryKey: ["pedidos", "periodo", periodo, inicio.toISOString(), fim.toISOString()],
     queryFn: () => fetchPedidosPorPeriodo(inicio, fim),
   });
 
-  const metricas = useMemo(() => calcularMetricas(pedidosDoPeriodo), [pedidosDoPeriodo]);
+  const pedidosValidos = useMemo(() => filtrarPedidosValidos(pedidosDoPeriodo), [pedidosDoPeriodo]);
+  const metricas = useMemo(() => calcularMetricas(pedidosValidos), [pedidosValidos]);
 
   const cards = [
     { label: "Pedidos", value: String(metricas.totalPedidos), icon: Receipt },
@@ -53,8 +66,8 @@ function Relatorios() {
   return (
     <main className="px-6 py-8">
       <h1 className="text-2xl">Relatórios</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Filtre por período e acompanhe pedidos, faturamento e produtos vendidos.
+      <p className="mt-1 text-xs text-muted-foreground">
+        Pedidos via Pix ainda não confirmados não entram nestes números.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">

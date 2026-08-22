@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { PixQrCode } from "@/components/ui/pix-qrcode";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -33,6 +35,15 @@ function AcompanharPedido() {
     queryKey: ["pedido", id],
     queryFn: () => fetchPedidoPorId(id),
   });
+
+  const pagamentoAnterior = useRef<boolean | undefined>(undefined);
+  useEffect(() => {
+    if (!pedido) return;
+    if (pagamentoAnterior.current === false && pedido.pagamento_confirmado) {
+      toast.success("Pagamento confirmado! Seu pedido já está sendo preparado. 🎉");
+    }
+    pagamentoAnterior.current = pedido.pagamento_confirmado;
+  }, [pedido?.pagamento_confirmado]);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-lg px-5 pb-10">
