@@ -171,4 +171,5 @@ export function faturamentoUltimosMeses(
     });
   }
   return meses;
+  
 }
