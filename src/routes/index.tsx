@@ -385,7 +385,7 @@ function Carrinho({
   const [valorRecebido, setValorRecebido] = useState("");
   const [precisaTroco, setPrecisaTroco] = useState<"sim" | "nao" | "">("");
 
-  // Taxas de entrega por bairro
+  /** Taxas de entrega por bairro */
   const TAXAS_ENTREGA: Record<string, number> = {
     "Alto Alegre": 2,
     Pedregal: 2,

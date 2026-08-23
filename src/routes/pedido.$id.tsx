@@ -179,7 +179,7 @@ function AcompanharPedido() {
                 </div>
               )}
 
-              {/* PAGAMENTO */}
+              {/* PAGAMENTO  */}
               <div className="border-t border-border pt-4">
                 <span className="text-xs text-muted-foreground">Forma de pagamento</span>
 

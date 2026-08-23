@@ -299,7 +299,7 @@ export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
   return data as string;
 }
 
-/** Registra uma venda feita presencialmente no balcão (não passa pelo fluxo online). */
+/* Registra uma venda feita presencialmente no balcão (não passa pelo fluxo online). */
 export async function registrarVendaBalcao(formaPagamento: FormaPagamento, itens: NovoItem[]) {
   const { data, error } = await db.rpc("registrar_venda_balcao", {
     p_forma_pagamento: formaPagamento,
