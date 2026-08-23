@@ -89,60 +89,39 @@ export type Database = {
       pedidos: {
         Row: {
           atualizado_em: string
-          bairro: string | null
-          complemento: string | null
           criado_em: string
           endereco: string | null
           forma_pagamento: string
           id: string
           nome_cliente: string
-          numero: string | null
-          origem: string
-          pagamento_confirmado: boolean
-          referencia: string | null
           status: Database["public"]["Enums"]["pedido_status"]
           telefone: string | null
           tipo_entrega: string
           total: number
-          visualizado: boolean
         }
         Insert: {
           atualizado_em?: string
-          bairro?: string | null
-          complemento?: string | null
           criado_em?: string
           endereco?: string | null
           forma_pagamento?: string
           id?: string
           nome_cliente?: string
-          numero?: string | null
-          origem?: string
-          pagamento_confirmado?: boolean
-          referencia?: string | null
           status?: Database["public"]["Enums"]["pedido_status"]
           telefone?: string | null
           tipo_entrega?: string
           total?: number
-          visualizado?: boolean
         }
         Update: {
           atualizado_em?: string
-          bairro?: string | null
-          complemento?: string | null
           criado_em?: string
           endereco?: string | null
           forma_pagamento?: string
           id?: string
           nome_cliente?: string
-          numero?: string | null
-          origem?: string
-          pagamento_confirmado?: boolean
-          referencia?: string | null
           status?: Database["public"]["Enums"]["pedido_status"]
           telefone?: string | null
           tipo_entrega?: string
           total?: number
-          visualizado?: boolean
         }
         Relationships: []
       }
@@ -153,7 +132,8 @@ export type Database = {
           criado_em: string
           descricao: string | null
           estabelecimento_id: string
-          estoque_meios: number
+          estoque_inteiro: number
+          estoque_metade: number
           foto_url: string | null
           id: string
           nome: string
@@ -167,7 +147,8 @@ export type Database = {
           criado_em?: string
           descricao?: string | null
           estabelecimento_id: string
-          estoque_meios?: number
+          estoque_inteiro?: number
+          estoque_metade?: number
           foto_url?: string | null
           id?: string
           nome: string
@@ -181,7 +162,8 @@ export type Database = {
           criado_em?: string
           descricao?: string | null
           estabelecimento_id?: string
-          estoque_meios?: number
+          estoque_inteiro?: number
+          estoque_metade?: number
           foto_url?: string | null
           id?: string
           nome?: string

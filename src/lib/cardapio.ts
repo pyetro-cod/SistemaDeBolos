@@ -19,9 +19,10 @@ export type Produto = {
   preco_inteiro: number;
   preco_metade: number;
 
-  // Estoque principal (única coluna no banco):
+  // Estoque principal:
   // 1 bolo inteiro = 2 metades
-  estoque_meios: number;
+  estoque_inteiro: number;
+  estoque_metade: number;
 
   foto_url: string | null;
   categoria: string;
@@ -159,26 +160,30 @@ export function precoPorTamanho(produto: Produto, tamanho: Tamanho) {
 /**
  * Quantidade de bolos inteiros disponíveis.
  *
- * O estoque_meios é o estoque principal (guardado em metades no banco).
- * 2 metades = 1 inteiro, então dividimos por 2 arredondando para baixo.
+ * O estoque_inteiro é o estoque principal.
  */
 export function inteirosDisponiveis(produto: Produto) {
-  return Math.floor(produto.estoque_meios / 2);
+  return produto.estoque_inteiro;
 }
 
 /**
- * Quantidade de metades disponíveis (valor direto do estoque).
+ * Calcula quantas metades correspondem aos bolos inteiros.
+ *
+ * Exemplo:
+ * 1 inteiro = 2 metades
+ * 2 inteiros = 4 metades
+ * 3 inteiros = 6 metades
  */
 export function metadesDisponiveis(produto: Produto) {
-  return produto.estoque_meios;
+  return produto.estoque_inteiro * 2;
 }
 
 /**
- * Enquanto existir pelo menos 1 bolo inteiro (2 metades),
+ * Enquanto existir pelo menos 1 bolo inteiro,
  * as opções Inteiro e Metade ficam disponíveis.
  */
 export function disponivelPorTamanho(produto: Produto, _tamanho: Tamanho) {
-  return inteirosDisponiveis(produto) >= 1;
+  return produto.estoque_inteiro >= 1;
 }
 
 export const ORDEM_CATEGORIAS = ["Bolos", "Doces", "Salgados", "Bebidas", "Outros"];
@@ -195,7 +200,8 @@ type ProdutoBanco = {
   descricao: string | null;
   preco_inteiro: number | string;
   preco_metade: number | string;
-  estoque_meios: number | string;
+  estoque_inteiro: number | string;
+  estoque_metade: number | string;
   foto_url: string | null;
   categoria: string;
   tags: string[];
@@ -209,7 +215,8 @@ function normalizeProduto(p: ProdutoBanco): Produto {
     descricao: p.descricao,
     preco_inteiro: Number(p.preco_inteiro),
     preco_metade: Number(p.preco_metade),
-    estoque_meios: Number(p.estoque_meios),
+    estoque_inteiro: Number(p.estoque_inteiro),
+    estoque_metade: Number(p.estoque_metade),
     foto_url: p.foto_url,
     categoria: p.categoria,
     tags: p.tags,
@@ -306,11 +313,10 @@ export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
     return null;
   }
 
-  const linhas = data as Array<{
+  const pedido = data as {
     id: string;
     status: PedidoStatus;
     nome_cliente: string;
-    telefone: string | null;
     tipo_entrega: TipoEntrega;
     endereco: string | null;
     numero: string | null;
@@ -331,21 +337,13 @@ export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
       tamanho: Tamanho;
       observacoes: string | null;
     }>;
-  }>;
-
-  // obter_pedido_publico é declarada com RETURNS TABLE(...), então o Supabase
-  // sempre devolve um array (mesmo tendo só 1 linha) — precisamos pegar o primeiro item.
-  const pedido = linhas[0];
-
-  if (!pedido) {
-    return null;
-  }
+  };
 
   return {
     id: pedido.id,
     status: pedido.status,
     nome_cliente: pedido.nome_cliente,
-    telefone: pedido.telefone,
+    telefone: null,
 
     tipo_entrega: pedido.tipo_entrega,
 
@@ -604,16 +602,18 @@ export async function salvarProduto(
   },
 ) {
   /*
-   * O estoque principal é estoque_meios (única coluna no banco).
+   * O estoque principal é estoque_inteiro.
    *
    * 1 inteiro = 2 metades
    * 2 inteiros = 4 metades
    * 3 inteiros = 6 metades
    */
-  const estoque_meios =
+  const estoque_inteiro =
     produto.quantidadeInteiros !== undefined
-      ? Math.max(0, Math.round(produto.quantidadeInteiros)) * 2
-      : (produto.estoque_meios ?? 0);
+      ? Math.max(0, Math.round(produto.quantidadeInteiros))
+      : (produto.estoque_inteiro ?? 0);
+
+  const estoque_metade = estoque_inteiro * 2;
 
   const payload = {
     estabelecimento_id: ESTABELECIMENTO_ID,
@@ -622,7 +622,8 @@ export async function salvarProduto(
     preco_inteiro: produto.preco_inteiro ?? 0,
     preco_metade: produto.preco_metade ?? 0,
 
-    estoque_meios,
+    estoque_inteiro,
+    estoque_metade,
 
     foto_url: produto.foto_url || null,
     categoria: produto.categoria || "Outros",
