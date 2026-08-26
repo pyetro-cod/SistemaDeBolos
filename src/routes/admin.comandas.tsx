@@ -1,9 +1,17 @@
-import { confirmarPagamentoPix } from "@/lib/cardapio";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowRight, Clock, Truck, Store, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Truck,
+  Store,
+  Sparkles,
+} from "lucide-react";
 import {
   avancarStatus,
   brl,
@@ -15,7 +23,17 @@ import {
   TIPO_ENTREGA_LABEL,
   FORMA_PAGAMENTO_LABEL,
 } from "@/lib/cardapio";
+import {
+  calcularIntervalo,
+  deslocarReferencia,
+  filtrarPedidosPorIntervalo,
+  rotuloIntervalo,
+  PERIODO_LABEL,
+  type Periodo,
+} from "@/lib/relatorios";
 import { StatusPedido } from "@/components/status-badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/comandas")({
@@ -33,12 +51,27 @@ export const Route = createFileRoute("/admin/comandas")({
   component: Pedidos,
 });
 
+const PERIODOS: Periodo[] = ["dia", "semana", "mes", "ano"];
+
 function Pedidos() {
   const queryClient = useQueryClient();
-  const { data: pedidos = [] } = useQuery({
+  const [periodo, setPeriodo] = useState<Periodo>("dia");
+  const [referencia, setReferencia] = useState(() => new Date());
+
+  const { data: todosPedidosAtivos = [] } = useQuery({
     queryKey: ["pedidos", "ativos"],
     queryFn: fetchPedidosAtivos,
   });
+
+  const { inicio, fim } = useMemo(() => calcularIntervalo(periodo, referencia), [periodo, referencia]);
+
+  // Mais recente primeiro + filtrado pelo período selecionado.
+  const pedidos = useMemo(() => {
+    const filtrados = filtrarPedidosPorIntervalo(todosPedidosAtivos, inicio, fim);
+    return [...filtrados].sort(
+      (a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime(),
+    );
+  }, [todosPedidosAtivos, inicio, fim]);
 
   const avancar = useMutation({
     mutationFn: avancarStatus,
@@ -48,15 +81,7 @@ function Pedidos() {
     },
   });
 
-  const confirmarPix = useMutation({
-    mutationFn: confirmarPagamentoPix,
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      toast.success("Pagamento PIX confirmado");
-    },
-  });
-
-  const naoVistos = pedidos
+  const naoVistos = todosPedidosAtivos
     .filter((p) => p.status === "recebido" && !p.visualizado)
     .map((p) => p.id);
 
@@ -71,13 +96,73 @@ function Pedidos() {
 
   return (
     <main className="px-6 py-8">
-      <h1 className="text-2xl">Pedidos ativos</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{pedidos.length} pedido(s) em andamento.</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl">Pedidos ativos</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {pedidos.length} pedido(s) em andamento.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="inline-flex rounded-lg border border-border p-1">
+          {PERIODOS.map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriodo(p)}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm transition-colors",
+                periodo === p
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent",
+              )}
+            >
+              {PERIODO_LABEL[p]}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setReferencia((r) => deslocarReferencia(periodo, r, -1))}
+            aria-label="Período anterior"
+            className="size-8 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent"
+          >
+            <ChevronLeft className="mx-auto size-4" strokeWidth={1.5} />
+          </button>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="inline-flex min-w-[11rem] items-center justify-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium capitalize transition-colors hover:bg-accent">
+                <CalendarDays className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+                {rotuloIntervalo(periodo, referencia)}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={referencia}
+                onSelect={(date) => date && setReferencia(date)}
+                captionLayout="dropdown"
+              />
+            </PopoverContent>
+          </Popover>
+
+          <button
+            onClick={() => setReferencia((r) => deslocarReferencia(periodo, r, 1))}
+            aria-label="Próximo período"
+            className="size-8 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent"
+          >
+            <ChevronRight className="mx-auto size-4" strokeWidth={1.5} />
+          </button>
+        </div>
+      </div>
 
       <div className="mt-6 space-y-3">
         {pedidos.length === 0 && (
           <p className="panel p-8 text-center text-sm text-muted-foreground">
-            Nenhum pedido em aberto agora.
+            Nenhum pedido em aberto nesse período.
           </p>
         )}
         {pedidos.map((pedido) => {
@@ -97,19 +182,6 @@ function Pedidos() {
                 )}
                 <span className="text-sm font-semibold">{pedido.nome_cliente || "Cliente"}</span>
                 <StatusPedido status={pedido.status} tipoEntrega={pedido.tipo_entrega} />
-                {pedido.forma_pagamento === "pix" && !pedido.pagamento_confirmado && (
-                  <button
-                    onClick={() => confirmarPix.mutate(pedido.id)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-[11px] font-medium text-warning transition-colors hover:bg-warning/20"
-                  >
-                    Confirmar PIX
-                  </button>
-                )}
-                {pedido.forma_pagamento === "pix" && pedido.pagamento_confirmado && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-success/25 bg-success/10 px-2 py-0.5 text-[11px] text-success">
-                    PIX confirmado
-                  </span>
-                )}
                 <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                   {pedido.tipo_entrega === "entrega" ? (
                     <Truck className="size-3.5" strokeWidth={1.5} />
