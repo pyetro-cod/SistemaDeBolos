@@ -381,4 +381,5 @@ export async function confirmarPagamentoPix(pedidoId: string) {
     .update({ pagamento_confirmado: true })
     .eq("id", pedidoId);
   if (error) throw error;
+  
 }
