@@ -63,7 +63,10 @@ function Pedidos() {
     queryFn: fetchPedidosAtivos,
   });
 
-  const { inicio, fim } = useMemo(() => calcularIntervalo(periodo, referencia), [periodo, referencia]);
+  const { inicio, fim } = useMemo(
+    () => calcularIntervalo(periodo, referencia),
+    [periodo, referencia],
+  );
 
   // Mais recente primeiro + filtrado pelo período selecionado.
   const pedidos = useMemo(() => {
@@ -200,10 +203,47 @@ function Pedidos() {
                 <span className="ml-auto text-sm font-medium">{brl(pedido.total)}</span>
               </div>
 
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-                {pedido.telefone && <span>Tel: {pedido.telefone}</span>}
-                {pedido.endereco && <span>Endereço: {pedido.endereco}</span>}
-                <span>Pagamento: {FORMA_PAGAMENTO_LABEL[pedido.forma_pagamento]}</span>
+              <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                {pedido.telefone && (
+                  <span>
+                    <strong className="text-foreground">Telefone:</strong> {pedido.telefone}
+                  </span>
+                )}
+
+                {pedido.tipo_entrega === "entrega" && pedido.endereco && (
+                  <span>
+                    <strong className="text-foreground">Rua:</strong> {pedido.endereco}
+                  </span>
+                )}
+
+                {pedido.tipo_entrega === "entrega" && pedido.numero && (
+                  <span>
+                    <strong className="text-foreground">Número:</strong> {pedido.numero}
+                  </span>
+                )}
+
+                {pedido.tipo_entrega === "entrega" && pedido.complemento && (
+                  <span>
+                    <strong className="text-foreground">Complemento:</strong> {pedido.complemento}
+                  </span>
+                )}
+
+                {pedido.tipo_entrega === "entrega" && pedido.bairro && (
+                  <span>
+                    <strong className="text-foreground">Bairro:</strong> {pedido.bairro}
+                  </span>
+                )}
+
+                {pedido.tipo_entrega === "entrega" && pedido.referencia && (
+                  <span className="sm:col-span-2">
+                    <strong className="text-foreground">Referência:</strong> {pedido.referencia}
+                  </span>
+                )}
+
+                <span>
+                  <strong className="text-foreground">Pagamento:</strong>{" "}
+                  {FORMA_PAGAMENTO_LABEL[pedido.forma_pagamento]}
+                </span>
               </div>
 
               <ul className="mt-4 space-y-1.5 border-t border-border pt-3">

@@ -7,6 +7,7 @@ import {
   CreditCard,
   Landmark,
   Leaf,
+  MessageCircle,
   Minus,
   Plus,
   ShoppingBag,
@@ -16,6 +17,7 @@ import {
   WheatOff,
   X,
 } from "lucide-react";
+
 import {
   brl,
   criarPedido,
@@ -31,6 +33,7 @@ import {
   type Tamanho,
   type TipoEntrega,
 } from "@/lib/cardapio";
+
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -42,13 +45,17 @@ export const Route = createFileRoute("/")({
         content:
           "Escolha entre bolos inteiros ou metade, faça seu pedido online e retire na loja ou receba em casa.",
       },
-      { property: "og:title", content: "Queiroz Bolos — Cardápio Digital" },
+      {
+        property: "og:title",
+        content: "Queiroz Bolos — Cardápio Digital",
+      },
       {
         property: "og:description",
         content: "Bolos inteiros ou metade, pedido online, retirada ou entrega.",
       },
     ],
   }),
+
   component: Index,
 });
 
@@ -56,6 +63,7 @@ type ItemCarrinho = NovoItem;
 
 function Index() {
   const navigate = useNavigate();
+
   const { data: produtos = [] } = useQuery({
     queryKey: ["produtos", "ativos"],
     queryFn: () => fetchProdutos(true),
@@ -70,24 +78,34 @@ function Index() {
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
 
   const qtdCarrinho = carrinho.reduce((a, i) => a + i.quantidade, 0);
-  const totalCarrinho = carrinho.reduce(
-    (a, i) => a + precoPorTamanho(i.produto, i.tamanho) * i.quantidade,
-    0,
-  );
 
   function adicionar(produto: Produto, tamanho: Tamanho, quantidade: number) {
     setCarrinho((atual) => {
       const existe = atual.find((i) => i.produto.id === produto.id && i.tamanho === tamanho);
+
       if (existe) {
         return atual.map((i) =>
           i.produto.id === produto.id && i.tamanho === tamanho
-            ? { ...i, quantidade: i.quantidade + quantidade }
+            ? {
+                ...i,
+                quantidade: i.quantidade + quantidade,
+              }
             : i,
         );
       }
-      return [...atual, { produto, tamanho, quantidade }];
+
+      return [
+        ...atual,
+        {
+          produto,
+          tamanho,
+          quantidade,
+        },
+      ];
     });
+
     toast.success(`${produto.nome} adicionado`);
+
     setCarrinhoAberto(true);
   }
 
@@ -96,19 +114,50 @@ function Index() {
       atual
         .map((i) =>
           i.produto.id === produtoId && i.tamanho === tamanho
-            ? { ...i, quantidade: i.quantidade + delta }
+            ? {
+                ...i,
+                quantidade: i.quantidade + delta,
+              }
             : i,
         )
         .filter((i) => i.quantidade > 0),
     );
   }
 
+  /*
+   * ==========================================
+   * CONTATO PELO WHATSAPP
+   * ==========================================
+   */
+
+  function entrarEmContatoWhatsApp() {
+    const numeroWhatsApp = "558396420239";
+
+    const mensagem = "Olá! Gostaria de entrar em contato com a Queiroz Bolos.";
+
+    const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
+
+    window.open(url, "_blank");
+  }
+
+  /*
+   * ==========================================
+   * CRIAR PEDIDO
+   * ==========================================
+   */
+
   const criar = useMutation({
     mutationFn: (dados: DadosClienteCarrinho) => criarPedido(dados, carrinho),
+
     onSuccess: (id) => {
       toast.success("Pedido enviado!");
-      navigate({ to: "/pedido/$id", params: { id } });
+
+      navigate({
+        to: "/pedido/$id",
+        params: { id },
+      });
     },
+
     onError: (err) => {
       const msg =
         err instanceof Error
@@ -116,26 +165,39 @@ function Index() {
           : typeof err === "object" && err && "message" in err
             ? String((err as { message: unknown }).message)
             : "";
+
       toast.error(msg ? traduzErroPedido(msg) : "Não foi possível enviar o pedido");
     },
   });
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-3xl px-5 pb-10">
+      {/* ========================================= */}
+      {/* CABEÇALHO                                 */}
+      {/* ========================================= */}
+
       <header className="sticky top-0 z-20 -mx-5 border-b border-border bg-background/85 px-5 py-4 backdrop-blur">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
               src="/logo.png"
               alt="Queiroz Bolos"
-              className="size-10 rounded-full object-cover border border-border shrink-0"
+              className="size-10 shrink-0 rounded-full border border-border object-cover"
             />
+
             <div>
               <h1 className="text-lg font-semibold leading-tight">Queiroz Bolos</h1>
+
               <p className="text-xs text-muted-foreground">Bolos inteiros ou metade</p>
             </div>
           </div>
+
+          {/* ===================================== */}
+          {/* BOTÃO DO CARRINHO                      */}
+          {/* ===================================== */}
+
           <button
+            type="button"
             onClick={() => setCarrinhoAberto(true)}
             className="relative inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
           >
@@ -150,17 +212,27 @@ function Index() {
         </div>
       </header>
 
+      {/* ========================================= */}
+      {/* APRESENTAÇÃO                              */}
+      {/* ========================================= */}
+
       <section className="pt-8">
         <h2 className="text-2xl leading-tight">Os melhores bolos da cidade.</h2>
+
         <p className="mt-2 max-w-lg text-sm text-muted-foreground">
           Escolha entre bolos inteiros ou metade. Faça seu pedido online e retire na loja ou receba
           em casa.
         </p>
       </section>
 
+      {/* ========================================= */}
+      {/* PRODUTOS                                  */}
+      {/* ========================================= */}
+
       {categorias.map((categoria) => (
         <section key={categoria} className="mt-8">
           <h3 className="text-sm font-semibold text-muted-foreground">{categoria}</h3>
+
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {produtos
               .filter((p) => p.categoria === categoria)
@@ -171,11 +243,35 @@ function Index() {
         </section>
       ))}
 
+      {/* ========================================= */}
+      {/* NENHUM PRODUTO                            */}
+      {/* ========================================= */}
+
       {produtos.length === 0 && (
         <p className="panel mt-8 p-8 text-center text-sm text-muted-foreground">
           Nenhum bolo disponível no momento.
         </p>
       )}
+
+      {/* ========================================= */}
+      {/* BOTÃO FLUTUANTE DO WHATSAPP              */}
+      {/* ========================================= */}
+
+      {!carrinhoAberto && (
+        <button
+          type="button"
+          onClick={entrarEmContatoWhatsApp}
+          aria-label="Falar com a Queiroz Bolos pelo WhatsApp"
+          title="Fale conosco pelo WhatsApp"
+          className="fixed bottom-6 right-5 z-40 flex size-14 items-center justify-center rounded-full bg-green-600 text-white shadow-lg transition-all duration-200 hover:scale-110 hover:bg-green-700 active:scale-95"
+        >
+          <MessageCircle className="size-7" strokeWidth={2} />
+        </button>
+      )}
+
+      {/* ========================================= */}
+      {/* CARRINHO LATERAL                         */}
+      {/* ========================================= */}
 
       {carrinhoAberto && (
         <div
@@ -186,9 +282,13 @@ function Index() {
             onClick={(e) => e.stopPropagation()}
             className="flex h-full w-full max-w-md flex-col border-l border-border bg-background"
           >
+            {/* CABEÇALHO DO CARRINHO */}
+
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <h2 className="text-sm font-semibold">Meu carrinho</h2>
+
               <button
+                type="button"
                 onClick={() => setCarrinhoAberto(false)}
                 aria-label="Fechar carrinho"
                 className="size-8 rounded-lg text-muted-foreground transition-colors hover:bg-accent"
@@ -196,6 +296,8 @@ function Index() {
                 <X className="mx-auto size-4" strokeWidth={1.5} />
               </button>
             </div>
+
+            {/* CONTEÚDO */}
 
             <div className="flex-1 overflow-y-auto px-5 py-4">
               <Carrinho
@@ -208,52 +310,50 @@ function Index() {
           </div>
         </div>
       )}
-
-      {carrinho.length > 0 && !carrinhoAberto && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/90 px-5 py-4 backdrop-blur">
-          <div className="mx-auto flex max-w-3xl items-center gap-4">
-            <div className="flex-1">
-              <p className="text-xs text-muted-foreground">Total</p>
-              <p className="text-lg font-semibold">{brl(totalCarrinho)}</p>
-            </div>
-            <button
-              onClick={() => setCarrinhoAberto(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              <ShoppingBag className="size-4" strokeWidth={1.5} />
-              Ver carrinho
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
+
+/*
+ * ======================================================
+ * CARD DO PRODUTO
+ * ======================================================
+ */
 
 function CardProduto({
   produto,
   onAdicionar,
 }: {
   produto: Produto;
+
   onAdicionar: (produto: Produto, tamanho: Tamanho, quantidade: number) => void;
 }) {
   const [tamanho, setTamanho] = useState<Tamanho>("inteiro");
+
   const [quantidade, setQuantidade] = useState(0);
 
   const preco = precoPorTamanho(produto, tamanho);
+
   const semEstoque = !disponivelPorTamanho(produto, tamanho);
+
   const maxQuantidade =
     tamanho === "inteiro" ? inteirosDisponiveis(produto) : inteirosDisponiveis(produto) * 2;
 
   return (
     <div className="panel flex flex-col gap-3 overflow-hidden p-0">
+      {/* FOTO */}
+
       {produto.foto_url && (
         <img src={produto.foto_url} alt={produto.nome} className="h-40 w-full object-cover" />
       )}
+
       <div className="flex flex-1 flex-col gap-3 p-4">
+        {/* INFORMAÇÕES */}
+
         <div>
           <div className="flex items-center gap-2">
             <h4 className="text-sm font-semibold">{produto.nome}</h4>
+
             {produto.tags.map((t) => (
               <span
                 key={t}
@@ -264,10 +364,12 @@ function CardProduto({
                 ) : t === "sem glúten" ? (
                   <WheatOff className="size-3" strokeWidth={1.5} />
                 ) : null}
+
                 {t}
               </span>
             ))}
           </div>
+
           {produto.descricao && (
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
               {produto.descricao}
@@ -275,9 +377,12 @@ function CardProduto({
           )}
         </div>
 
+        {/* TAMANHO */}
+
         <div className="flex gap-1.5">
           {(["inteiro", "metade"] as Tamanho[]).map((t) => {
             const disponivel = disponivelPorTamanho(produto, t);
+
             return (
               <button
                 key={t}
@@ -289,6 +394,7 @@ function CardProduto({
                 }}
                 className={cn(
                   "flex-1 rounded-lg border px-2 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+
                   tamanho === t
                     ? "border-primary/40 bg-primary-soft text-primary"
                     : "border-border text-muted-foreground hover:bg-accent",
@@ -300,11 +406,15 @@ function CardProduto({
           })}
         </div>
 
+        {/* ESTOQUE */}
+
         <p className="text-xs text-muted-foreground">
           {semEstoque
             ? "Sem estoque para este tamanho"
             : `${maxQuantidade} ${maxQuantidade === 1 ? "disponível" : "disponíveis"}`}
         </p>
+
+        {/* QUANTIDADE */}
 
         <div className="mt-auto flex items-center gap-3">
           <div className="flex items-center gap-1">
@@ -316,7 +426,9 @@ function CardProduto({
             >
               <Minus className="mx-auto size-3.5" strokeWidth={1.5} />
             </button>
+
             <span className="w-6 text-center text-sm">{quantidade}</span>
+
             <button
               type="button"
               onClick={() => setQuantidade((q) => Math.min(maxQuantidade || 1, q + 1))}
@@ -326,11 +438,15 @@ function CardProduto({
               <Plus className="mx-auto size-3.5" strokeWidth={1.5} />
             </button>
           </div>
+
+          {/* ADICIONAR */}
+
           <button
             type="button"
             disabled={semEstoque || quantidade === 0}
             onClick={() => {
               onAdicionar(produto, tamanho, quantidade);
+
               setQuantidade(0);
             }}
             className="flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
@@ -343,6 +459,12 @@ function CardProduto({
   );
 }
 
+/*
+ * ======================================================
+ * DADOS DO CLIENTE
+ * ======================================================
+ */
+
 type DadosClienteCarrinho = DadosCliente & {
   numero?: string;
   complemento?: string;
@@ -352,12 +474,21 @@ type DadosClienteCarrinho = DadosCliente & {
   formaPagamento?: FormaPagamento;
 
   precisaTroco?: "sim" | "nao" | "";
+
   valorRecebido?: number | null;
+
   troco?: number | null;
 
   subtotal?: number;
   total?: number;
 };
+
+/*
+ * ======================================================
+ * CARRINHO
+ * ======================================================
+ */
+
 function Carrinho({
   itens,
   onAlterarQtd,
@@ -365,27 +496,41 @@ function Carrinho({
   enviando,
 }: {
   itens: ItemCarrinho[];
+
   onAlterarQtd: (produtoId: string, tamanho: Tamanho, delta: number) => void;
+
   onFinalizar: (dados: DadosClienteCarrinho) => void;
+
   enviando: boolean;
 }) {
   const [nome, setNome] = useState("");
+
   const [telefone, setTelefone] = useState("");
 
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("retirada");
 
   const [endereco, setEndereco] = useState("");
+
   const [numero, setNumero] = useState("");
+
   const [complemento, setComplemento] = useState("");
+
   const [bairro, setBairro] = useState("");
+
   const [referencia, setReferencia] = useState("");
 
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>("pix");
 
   const [valorRecebido, setValorRecebido] = useState("");
+
   const [precisaTroco, setPrecisaTroco] = useState<"sim" | "nao" | "">("");
 
-  /** Taxas de entrega por bairro */
+  /*
+   * ==========================================
+   * TAXAS DE ENTREGA
+   * ==========================================
+   */
+
   const TAXAS_ENTREGA: Record<string, number> = {
     "Alto Alegre": 2,
     Pedregal: 2,
@@ -405,19 +550,39 @@ function Carrinho({
     "Várzea Redonda": 3,
   };
 
-  // Subtotal somente dos produtos
+  /*
+   * ==========================================
+   * SUBTOTAL
+   * ==========================================
+   */
+
   const subtotal = itens.reduce(
     (a, i) => a + precoPorTamanho(i.produto, i.tamanho) * i.quantidade,
     0,
   );
 
-  // Taxa somente quando for entrega
+  /*
+   * ==========================================
+   * TAXA
+   * ==========================================
+   */
+
   const taxaEntrega = tipoEntrega === "entrega" && bairro ? (TAXAS_ENTREGA[bairro] ?? 0) : 0;
 
-  // Total dos produtos + taxa
+  /*
+   * ==========================================
+   * TOTAL
+   * ==========================================
+   */
+
   const total = subtotal + taxaEntrega;
 
-  // Verifica se os dados obrigatórios foram preenchidos
+  /*
+   * ==========================================
+   * VALIDAÇÃO
+   * ==========================================
+   */
+
   const podeEnviar =
     itens.length > 0 &&
     nome.trim().length > 0 &&
@@ -428,12 +593,24 @@ function Carrinho({
         bairro.trim().length > 0 &&
         referencia.trim().length > 0));
 
+  /*
+   * ==========================================
+   * TROCO
+   * ==========================================
+   */
+
   const valorRecebidoNumero = Number(valorRecebido.replace(",", "."));
 
   const trocoInsuficiente =
     formaPagamento === "dinheiro" &&
     precisaTroco === "sim" &&
     (valorRecebido === "" || valorRecebidoNumero < total);
+
+  /*
+   * ==========================================
+   * CARRINHO VAZIO
+   * ==========================================
+   */
 
   if (itens.length === 0) {
     return (
@@ -443,9 +620,9 @@ function Carrinho({
 
   return (
     <div className="space-y-5">
-      {/* ========================================= */}
-      {/* ITENS DO CARRINHO                         */}
-      {/* ========================================= */}
+      {/* ======================================= */}
+      {/* ITENS                                  */}
+      {/* ======================================= */}
 
       <div className="space-y-3">
         {itens.map((item) => (
@@ -462,6 +639,7 @@ function Carrinho({
 
               <div className="flex items-center gap-1">
                 {/* DIMINUIR */}
+
                 <button
                   type="button"
                   onClick={() => onAlterarQtd(item.produto.id, item.tamanho, -1)}
@@ -478,6 +656,7 @@ function Carrinho({
                 <span className="w-5 text-center text-sm">{item.quantidade}</span>
 
                 {/* AUMENTAR */}
+
                 <button
                   type="button"
                   onClick={() => onAlterarQtd(item.produto.id, item.tamanho, 1)}
@@ -492,9 +671,9 @@ function Carrinho({
         ))}
       </div>
 
-      {/* ========================================= */}
-      {/* RESUMO DO PEDIDO                          */}
-      {/* ========================================= */}
+      {/* ======================================= */}
+      {/* RESUMO                                  */}
+      {/* ======================================= */}
 
       <div className="space-y-2 border-t border-border pt-3">
         <div className="flex items-center justify-between">
@@ -518,12 +697,13 @@ function Carrinho({
         </div>
       </div>
 
-      {/* ========================================= */}
-      {/* DADOS DO CLIENTE                          */}
-      {/* ========================================= */}
+      {/* ======================================= */}
+      {/* DADOS DO CLIENTE                        */}
+      {/* ======================================= */}
 
       <div className="space-y-3 border-t border-border pt-4">
         {/* NOME */}
+
         <label className="block space-y-1.5">
           <span className="text-xs text-muted-foreground">Nome</span>
 
@@ -536,6 +716,7 @@ function Carrinho({
         </label>
 
         {/* TELEFONE */}
+
         <label className="block space-y-1.5">
           <span className="text-xs text-muted-foreground">Telefone</span>
 
@@ -548,21 +729,21 @@ function Carrinho({
           />
         </label>
 
-        {/* ======================================= */}
-        {/* TIPO DE ENTREGA                         */}
-        {/* ======================================= */}
+        {/* ===================================== */}
+        {/* TIPO DE ENTREGA                       */}
+        {/* ===================================== */}
 
         <div>
           <span className="text-xs text-muted-foreground">Como deseja receber o pedido?</span>
 
           <div className="mt-1.5 flex gap-2">
             {/* RETIRADA */}
+
             <button
               type="button"
               onClick={() => {
                 setTipoEntrega("retirada");
 
-                // Limpa os dados de endereço
                 setEndereco("");
                 setNumero("");
                 setComplemento("");
@@ -571,6 +752,7 @@ function Carrinho({
               }}
               className={cn(
                 "flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+
                 tipoEntrega === "retirada"
                   ? "border-primary/40 bg-primary-soft text-primary"
                   : "border-border text-muted-foreground hover:bg-accent",
@@ -581,11 +763,13 @@ function Carrinho({
             </button>
 
             {/* ENTREGA */}
+
             <button
               type="button"
               onClick={() => setTipoEntrega("entrega")}
               className={cn(
                 "flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+
                 tipoEntrega === "entrega"
                   ? "border-primary/40 bg-primary-soft text-primary"
                   : "border-border text-muted-foreground hover:bg-accent",
@@ -597,10 +781,9 @@ function Carrinho({
           </div>
         </div>
 
-        {/* ======================================= */}
-        {/* ENDEREÇO                                */}
-        {/* SÓ APARECE PARA ENTREGA                */}
-        {/* ======================================= */}
+        {/* ===================================== */}
+        {/* ENDEREÇO                              */}
+        {/* ===================================== */}
 
         {tipoEntrega === "entrega" && (
           <div className="space-y-3 rounded-lg border border-border bg-background p-3">
@@ -613,6 +796,7 @@ function Carrinho({
             </div>
 
             {/* RUA */}
+
             <label className="block space-y-1.5">
               <span className="text-xs text-muted-foreground">Rua / Avenida</span>
 
@@ -625,8 +809,8 @@ function Carrinho({
             </label>
 
             {/* NÚMERO + COMPLEMENTO */}
+
             <div className="grid grid-cols-2 gap-3">
-              {/* NÚMERO */}
               <label className="block space-y-1.5">
                 <span className="text-xs text-muted-foreground">Número</span>
 
@@ -639,7 +823,6 @@ function Carrinho({
                 />
               </label>
 
-              {/* COMPLEMENTO */}
               <label className="block space-y-1.5">
                 <span className="text-xs text-muted-foreground">Complemento</span>
 
@@ -653,6 +836,7 @@ function Carrinho({
             </div>
 
             {/* BAIRRO */}
+
             <label className="block space-y-1.5">
               <span className="text-xs text-muted-foreground">Bairro</span>
 
@@ -672,6 +856,7 @@ function Carrinho({
             </label>
 
             {/* REFERÊNCIA */}
+
             <label className="block space-y-1.5">
               <span className="text-xs text-muted-foreground">Ponto de referência</span>
 
@@ -684,6 +869,7 @@ function Carrinho({
             </label>
 
             {/* TAXA */}
+
             {bairro && (
               <div className="flex items-center justify-between rounded-lg border border-border bg-primary-soft p-3">
                 <div>
@@ -698,9 +884,9 @@ function Carrinho({
           </div>
         )}
 
-        {/* ======================================= */}
-        {/* FORMA DE PAGAMENTO                      */}
-        {/* ======================================= */}
+        {/* ===================================== */}
+        {/* FORMA DE PAGAMENTO                    */}
+        {/* ===================================== */}
 
         <div>
           <span className="text-xs text-muted-foreground">Forma de pagamento</span>
@@ -731,6 +917,7 @@ function Carrinho({
                 onClick={() => setFormaPagamento(op.id)}
                 className={cn(
                   "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs transition-colors",
+
                   formaPagamento === op.id
                     ? "border-primary/40 bg-primary-soft text-primary"
                     : "border-border text-muted-foreground hover:bg-accent",
@@ -743,9 +930,7 @@ function Carrinho({
             ))}
           </div>
 
-          {/* ===================================== */}
-          {/* DINHEIRO                              */}
-          {/* ===================================== */}
+          {/* DINHEIRO */}
 
           {formaPagamento === "dinheiro" && (
             <div className="mt-3 rounded-lg border border-border bg-background p-3">
@@ -761,6 +946,7 @@ function Carrinho({
                     }}
                     className={cn(
                       "rounded-lg border px-3 py-2 text-sm transition-colors",
+
                       precisaTroco === "sim"
                         ? "border-primary/40 bg-primary-soft text-primary"
                         : "border-border text-muted-foreground hover:bg-accent",
@@ -777,6 +963,7 @@ function Carrinho({
                     }}
                     className={cn(
                       "rounded-lg border px-3 py-2 text-sm transition-colors",
+
                       precisaTroco === "nao"
                         ? "border-primary/40 bg-primary-soft text-primary"
                         : "border-border text-muted-foreground hover:bg-accent",
@@ -805,6 +992,7 @@ function Carrinho({
                     <p
                       className={cn(
                         "text-sm font-medium",
+
                         valorRecebidoNumero < total ? "text-destructive" : "text-success",
                       )}
                     >
@@ -818,9 +1006,7 @@ function Carrinho({
             </div>
           )}
 
-          {/* ===================================== */}
-          {/* PIX                                   */}
-          {/* ===================================== */}
+          {/* PIX */}
 
           {formaPagamento === "pix" && (
             <p className="mt-3 rounded-lg border border-border bg-background p-3 text-xs text-muted-foreground">
@@ -830,9 +1016,9 @@ function Carrinho({
         </div>
       </div>
 
-      {/* ========================================= */}
-      {/* FINALIZAR PEDIDO                          */}
-      {/* ========================================= */}
+      {/* ======================================= */}
+      {/* FINALIZAR PEDIDO                        */}
+      {/* ======================================= */}
 
       <button
         type="button"
