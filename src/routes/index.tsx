@@ -155,6 +155,21 @@ function Index() {
     onSuccess: (id) => {
       toast.success("Pedido enviado!");
 
+      const criar = useMutation({
+        mutationFn: (dados: DadosClienteCarrinho) => criarPedido(dados, carrinho),
+
+        onSuccess: (id) => {
+          salvarPedidoLocal(id);
+          toast.success("Pedido enviado!");
+          navigate({
+            to: "/pedido/$id",
+            params: { id },
+          });
+        },
+        onError: (err) => {
+          // ...resto igual
+        },
+      });
       navigate({
         to: "/pedido/$id",
         params: { id },
