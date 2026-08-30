@@ -245,7 +245,6 @@ function Pedidos() {
                   {FORMA_PAGAMENTO_LABEL[pedido.forma_pagamento]}
                 </span>
               </div>
-
               <ul className="mt-4 space-y-1.5 border-t border-border pt-3">
                 {pedido.itens_pedido?.map((i) => (
                   <li key={i.id} className="flex justify-between text-sm">
