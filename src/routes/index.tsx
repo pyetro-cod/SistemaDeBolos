@@ -151,31 +151,11 @@ function Index() {
 
   const criar = useMutation({
     mutationFn: (dados: DadosClienteCarrinho) => criarPedido(dados, carrinho),
-
     onSuccess: (id) => {
+      salvarPedidoLocal(id);
       toast.success("Pedido enviado!");
-
-      const criar = useMutation({
-        mutationFn: (dados: DadosClienteCarrinho) => criarPedido(dados, carrinho),
-
-        onSuccess: (id) => {
-          salvarPedidoLocal(id);
-          toast.success("Pedido enviado!");
-          navigate({
-            to: "/pedido/$id",
-            params: { id },
-          });
-        },
-        onError: (err) => {
-          // ...resto igual
-        },
-      });
-      navigate({
-        to: "/pedido/$id",
-        params: { id },
-      });
+      navigate({ to: "/pedido/$id", params: { id } });
     },
-
     onError: (err) => {
       const msg =
         err instanceof Error
@@ -183,7 +163,6 @@ function Index() {
           : typeof err === "object" && err && "message" in err
             ? String((err as { message: unknown }).message)
             : "";
-
       toast.error(msg ? traduzErroPedido(msg) : "Não foi possível enviar o pedido");
     },
   });
@@ -196,7 +175,6 @@ function Index() {
 
       <header className="sticky top-0 z-20 -mx-5 border-b border-border bg-background/85 px-5 py-4 backdrop-blur">
         <div className="flex items-center justify-between">
-          
           <div className="flex items-center gap-3">
             <img
               src="/logo.png"
