@@ -56,6 +56,7 @@ function Historico() {
           )}
         </div>
       </div>
+      
       <div className="mt-6 space-y-3">
         {filtrados.length === 0 && (
           <p className="panel p-8 text-center text-sm text-muted-foreground">
