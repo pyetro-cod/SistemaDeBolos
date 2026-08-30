@@ -190,22 +190,26 @@ function Index() {
           </div>
 
           {/* ===================================== */}
-          {/* BOTÃO DO CARRINHO                      */}
+          {/* MEUS PEDIDOS + CARRINHO                */}
           {/* ===================================== */}
 
-          <button
-            type="button"
-            onClick={() => setCarrinhoAberto(true)}
-            className="relative inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
-          >
-            <ShoppingBag className="size-4" strokeWidth={1.5} />
-            Carrinho
-            {qtdCarrinho > 0 && (
-              <span className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
-                {qtdCarrinho}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <MeusPedidos />
+
+            <button
+              type="button"
+              onClick={() => setCarrinhoAberto(true)}
+              className="relative inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
+            >
+              <ShoppingBag className="size-4" strokeWidth={1.5} />
+              Carrinho
+              {qtdCarrinho > 0 && (
+                <span className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
+                  {qtdCarrinho}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
