@@ -1,7 +1,19 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { brl, fetchPedidosFechados, TAMANHO_LABEL, TIPO_ENTREGA_LABEL } from "@/lib/cardapio";
+import {
+  calcularIntervalo,
+  deslocarReferencia,
+  filtrarPedidosPorIntervalo,
+  rotuloIntervalo,
+  PERIODO_LABEL,
+  type Periodo,
+} from "@/lib/relatorios";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/historico")({
   head: () => ({
@@ -18,16 +30,27 @@ export const Route = createFileRoute("/admin/historico")({
   component: Historico,
 });
 
+const PERIODOS: Periodo[] = ["dia", "semana", "mes", "ano"];
+
 function Historico() {
-  const [data, setData] = useState("");
-  const { data: pedidos = [] } = useQuery({
+  const [periodo, setPeriodo] = useState<Periodo>("dia");
+  const [referencia, setReferencia] = useState(() => new Date());
+
+  const { data: todosPedidos = [] } = useQuery({
     queryKey: ["pedidos", "fechados"],
     queryFn: fetchPedidosFechados,
   });
 
-  const filtrados = data
-    ? pedidos.filter((p) => p.atualizado_em.slice(0, 10) === data)
-    : pedidos;
+  const { inicio, fim } = useMemo(
+    () => calcularIntervalo(periodo, referencia),
+    [periodo, referencia],
+  );
+
+  const filtrados = useMemo(
+    () => filtrarPedidosPorIntervalo(todosPedidos, inicio, fim),
+    [todosPedidos, inicio, fim],
+  );
+
   const total = filtrados.reduce((a, p) => a + p.total, 0);
 
   return (
@@ -39,24 +62,62 @@ function Historico() {
             {filtrados.length} pedido(s) · {brl(total)}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-            className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
-          />
-          {data && (
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="inline-flex rounded-lg border border-border p-1">
+          {PERIODOS.map((p) => (
             <button
-              onClick={() => setData("")}
-              className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent"
+              key={p}
+              onClick={() => setPeriodo(p)}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm transition-colors",
+                periodo === p
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent",
+              )}
             >
-              Limpar
+              {PERIODO_LABEL[p]}
             </button>
-          )}
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setReferencia((r) => deslocarReferencia(periodo, r, -1))}
+            aria-label="Período anterior"
+            className="size-8 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent"
+          >
+            <ChevronLeft className="mx-auto size-4" strokeWidth={1.5} />
+          </button>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="inline-flex min-w-[11rem] items-center justify-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium capitalize transition-colors hover:bg-accent">
+                <CalendarDays className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+                {rotuloIntervalo(periodo, referencia)}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={referencia}
+                onSelect={(date) => date && setReferencia(date)}
+                captionLayout="dropdown"
+              />
+            </PopoverContent>
+          </Popover>
+
+          <button
+            onClick={() => setReferencia((r) => deslocarReferencia(periodo, r, 1))}
+            aria-label="Próximo período"
+            className="size-8 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent"
+          >
+            <ChevronRight className="mx-auto size-4" strokeWidth={1.5} />
+          </button>
         </div>
       </div>
-      
+
       <div className="mt-6 space-y-3">
         {filtrados.length === 0 && (
           <p className="panel p-8 text-center text-sm text-muted-foreground">
