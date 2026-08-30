@@ -1,3 +1,6 @@
+
+import { salvarPedidoLocal } from "@/lib/pedidos-locais";
+
 import { useEffect, useRef } from "react";
 
 import { toast } from "sonner";

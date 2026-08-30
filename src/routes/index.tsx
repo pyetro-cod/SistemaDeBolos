@@ -1,3 +1,6 @@
+import { salvarPedidoLocal } from "@/lib/pedidos-locais";
+import { MeusPedidos } from "@/components//ui/meus-pedidos";
+
 import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -152,6 +155,21 @@ function Index() {
     onSuccess: (id) => {
       toast.success("Pedido enviado!");
 
+      const criar = useMutation({
+        mutationFn: (dados: DadosClienteCarrinho) => criarPedido(dados, carrinho),
+
+        onSuccess: (id) => {
+          salvarPedidoLocal(id);
+          toast.success("Pedido enviado!");
+          navigate({
+            to: "/pedido/$id",
+            params: { id },
+          });
+        },
+        onError: (err) => {
+          // ...resto igual
+        },
+      });
       navigate({
         to: "/pedido/$id",
         params: { id },
@@ -178,6 +196,21 @@ function Index() {
 
       <header className="sticky top-0 z-20 -mx-5 border-b border-border bg-background/85 px-5 py-4 backdrop-blur">
         <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MeusPedidos />
+            <button
+              onClick={() => setCarrinhoAberto(true)}
+              className="relative inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
+            >
+              <ShoppingBag className="size-4" strokeWidth={1.5} />
+              Carrinho
+              {qtdCarrinho > 0 && (
+                <span className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
+                  {qtdCarrinho}
+                </span>
+              )}
+            </button>
+          </div>
           <div className="flex items-center gap-3">
             <img
               src="/logo.png"
