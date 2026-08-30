@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useQueries } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ClipboardList, X } from "lucide-react";
@@ -42,62 +43,64 @@ export function MeusPedidos() {
         Meus pedidos
       </button>
 
-      {aberto && (
-        <div
-          className="fixed inset-0 z-40 flex justify-end bg-black/50"
-          onClick={() => setAberto(false)}
-        >
+      {aberto &&
+        createPortal(
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="flex h-full w-full max-w-md flex-col border-l border-border bg-background"
+            className="fixed inset-0 z-40 flex justify-end bg-black/50"
+            onClick={() => setAberto(false)}
           >
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <h2 className="text-sm font-semibold">Meus pedidos recentes</h2>
-              <button
-                onClick={() => setAberto(false)}
-                aria-label="Fechar"
-                className="size-8 rounded-lg text-muted-foreground transition-colors hover:bg-accent"
-              >
-                <X className="mx-auto size-4" strokeWidth={1.5} />
-              </button>
-            </div>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="flex h-full w-full max-w-md flex-col border-l border-border bg-background"
+            >
+              <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                <h2 className="text-sm font-semibold">Meus pedidos recentes</h2>
+                <button
+                  onClick={() => setAberto(false)}
+                  aria-label="Fechar"
+                  className="size-8 rounded-lg text-muted-foreground transition-colors hover:bg-accent"
+                >
+                  <X className="mx-auto size-4" strokeWidth={1.5} />
+                </button>
+              </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              {pedidosValidos.length === 0 && (
-                <p className="p-6 text-center text-sm text-muted-foreground">
-                  Nenhum pedido recente encontrado neste dispositivo.
-                </p>
-              )}
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+                {pedidosValidos.length === 0 && (
+                  <p className="p-6 text-center text-sm text-muted-foreground">
+                    Nenhum pedido recente encontrado neste dispositivo.
+                  </p>
+                )}
 
-              <div className="space-y-3">
-                {pedidosValidos.map((pedido) => (
-                  <Link
-                    key={pedido.id}
-                    to="/pedido/$id"
-                    params={{ id: pedido.id }}
-                    onClick={() => setAberto(false)}
-                    className="panel block p-4 transition-colors hover:border-primary/40"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        #{pedido.id.slice(0, 6)} ·{" "}
-                        {new Date(pedido.criado_em).toLocaleDateString("pt-BR")}
-                      </span>
-                      <StatusPedido status={pedido.status} tipoEntrega={pedido.tipo_entrega} />
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        {TIPO_ENTREGA_LABEL[pedido.tipo_entrega]}
-                      </span>
-                      <span className="text-sm font-medium">{brl(pedido.total)}</span>
-                    </div>
-                  </Link>
-                ))}
+                <div className="space-y-3">
+                  {pedidosValidos.map((pedido) => (
+                    <Link
+                      key={pedido.id}
+                      to="/pedido/$id"
+                      params={{ id: pedido.id }}
+                      onClick={() => setAberto(false)}
+                      className="panel block p-4 transition-colors hover:border-primary/40"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          #{pedido.id.slice(0, 6)} ·{" "}
+                          {new Date(pedido.criado_em).toLocaleDateString("pt-BR")}
+                        </span>
+                        <StatusPedido status={pedido.status} tipoEntrega={pedido.tipo_entrega} />
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          {TIPO_ENTREGA_LABEL[pedido.tipo_entrega]}
+                        </span>
+                        <span className="text-sm font-medium">{brl(pedido.total)}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
