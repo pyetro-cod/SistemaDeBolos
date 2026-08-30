@@ -11,10 +11,12 @@ import {
   Truck,
   Store,
   Sparkles,
+  QrCode,
 } from "lucide-react";
 import {
   avancarStatus,
   brl,
+  confirmarPagamentoPix,
   fetchPedidosAtivos,
   marcarVisualizado,
   proximoStatus,
@@ -82,6 +84,15 @@ function Pedidos() {
       queryClient.invalidateQueries();
       toast.success("Status atualizado");
     },
+  });
+
+  const confirmarPix = useMutation({
+    mutationFn: confirmarPagamentoPix,
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+      toast.success("Pagamento PIX confirmado");
+    },
+    onError: () => toast.error("Não foi possível confirmar o pagamento"),
   });
 
   const naoVistos = todosPedidosAtivos
@@ -171,6 +182,8 @@ function Pedidos() {
         {pedidos.map((pedido) => {
           const next = proximoStatus(pedido.status);
           const novo = pedido.status === "recebido" && !pedido.visualizado;
+          const aguardandoPix =
+            pedido.forma_pagamento === "pix" && !pedido.pagamento_confirmado;
           return (
             <article
               key={pedido.id}
@@ -240,11 +253,24 @@ function Pedidos() {
                   </span>
                 )}
 
-                <span>
+                <span className="inline-flex items-center gap-1.5">
                   <strong className="text-foreground">Pagamento:</strong>{" "}
                   {FORMA_PAGAMENTO_LABEL[pedido.forma_pagamento]}
+                  {pedido.forma_pagamento === "pix" && (
+                    <span
+                      className={cn(
+                        "rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
+                        pedido.pagamento_confirmado
+                          ? "border-success/25 bg-success/10 text-success"
+                          : "border-warning/25 bg-warning/10 text-warning",
+                      )}
+                    >
+                      {pedido.pagamento_confirmado ? "Confirmado" : "Aguardando"}
+                    </span>
+                  )}
                 </span>
               </div>
+
               <ul className="mt-4 space-y-1.5 border-t border-border pt-3">
                 {pedido.itens_pedido?.map((i) => (
                   <li key={i.id} className="flex justify-between text-sm">
@@ -257,15 +283,28 @@ function Pedidos() {
                 ))}
               </ul>
 
-              {next && (
-                <button
-                  onClick={() => avancar.mutate(pedido)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                >
-                  Avançar para {statusLabel(next, pedido.tipo_entrega)}
-                  <ArrowRight className="size-4" strokeWidth={1.5} />
-                </button>
-              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {aguardandoPix && (
+                  <button
+                    onClick={() => confirmarPix.mutate(pedido.id)}
+                    disabled={confirmarPix.isPending}
+                    className="inline-flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3.5 py-2 text-sm font-medium text-warning transition-colors hover:bg-warning/20 disabled:opacity-60"
+                  >
+                    <QrCode className="size-4" strokeWidth={1.5} />
+                    Confirmar PIX
+                  </button>
+                )}
+
+                {next && (
+                  <button
+                    onClick={() => avancar.mutate(pedido)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
+                    Avançar para {statusLabel(next, pedido.tipo_entrega)}
+                    <ArrowRight className="size-4" strokeWidth={1.5} />
+                  </button>
+                )}
+              </div>
             </article>
           );
         })}
