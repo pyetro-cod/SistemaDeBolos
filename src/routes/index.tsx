@@ -1,5 +1,5 @@
 import { salvarPedidoLocal } from "@/lib/pedidos-locais";
-import { MeusPedidos } from "@/components//ui/meus-pedidos";
+import { MeusPedidos } from "@/components/ui/meus-pedidos";
 
 import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
