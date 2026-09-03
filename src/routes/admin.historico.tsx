@@ -1,8 +1,13 @@
 import { useMemo, useState } from "react";
+
 import { createFileRoute } from "@tanstack/react-router";
+
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+
+import { CalendarDays, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+
 import { brl, fetchPedidosFechados, TAMANHO_LABEL, TIPO_ENTREGA_LABEL } from "@/lib/cardapio";
+
 import {
   calcularIntervalo,
   deslocarReferencia,
@@ -11,8 +16,11 @@ import {
   PERIODO_LABEL,
   type Periodo,
 } from "@/lib/relatorios";
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 import { Calendar } from "@/components/ui/calendar";
+
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/historico")({
@@ -23,8 +31,14 @@ export const Route = createFileRoute("/admin/historico")({
         name: "description",
         content: "Consulte pedidos concluídos por data e confira o faturamento do período.",
       },
-      { property: "og:title", content: "Histórico de pedidos — Cardápio Digital" },
-      { property: "og:description", content: "Pedidos concluídos com filtro por data." },
+      {
+        property: "og:title",
+        content: "Histórico de pedidos — Cardápio Digital",
+      },
+      {
+        property: "og:description",
+        content: "Pedidos concluídos com filtro por data.",
+      },
     ],
   }),
   component: Historico,
@@ -34,6 +48,7 @@ const PERIODOS: Periodo[] = ["dia", "semana", "mes", "ano"];
 
 function Historico() {
   const [periodo, setPeriodo] = useState<Periodo>("dia");
+
   const [referencia, setReferencia] = useState(() => new Date());
 
   const { data: todosPedidos = [] } = useQuery({
@@ -58,12 +73,12 @@ function Historico() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl">Histórico</h1>
+
           <p className="mt-1 text-sm text-muted-foreground">
             {filtrados.length} pedido(s) · {brl(total)}
           </p>
         </div>
       </div>
-
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
         <div className="inline-flex rounded-lg border border-border p-1">
           {PERIODOS.map((p) => (
@@ -95,9 +110,11 @@ function Historico() {
             <PopoverTrigger asChild>
               <button className="inline-flex min-w-[11rem] items-center justify-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium capitalize transition-colors hover:bg-accent">
                 <CalendarDays className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+
                 {rotuloIntervalo(periodo, referencia)}
               </button>
             </PopoverTrigger>
+
             <PopoverContent className="w-auto p-0" align="end">
               <Calendar
                 mode="single"
@@ -124,13 +141,16 @@ function Historico() {
             Nenhum pedido concluído nesse período.
           </p>
         )}
+
         {filtrados.map((pedido) => (
           <article key={pedido.id} className="panel p-5">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm font-semibold">{pedido.nome_cliente || "Cliente"}</span>
+
               <span className="text-xs text-muted-foreground">
                 {TIPO_ENTREGA_LABEL[pedido.tipo_entrega]}
               </span>
+
               <span
                 className={
                   pedido.origem === "balcao"
@@ -140,11 +160,22 @@ function Historico() {
               >
                 {pedido.origem === "balcao" ? "Balcão" : "Online"}
               </span>
+
               <span className="text-xs text-muted-foreground">
                 {new Date(pedido.atualizado_em).toLocaleString("pt-BR")}
               </span>
+
               <span className="ml-auto text-sm font-medium">{brl(pedido.total)}</span>
+
+              <button
+                type="button"
+                aria-label={`Apagar pedido de ${pedido.nome_cliente || "Cliente"}`}
+                className="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-red-500 hover:bg-red-50 hover:text-red-500"
+              >
+                <Trash2 className="size-4" strokeWidth={1.5} />
+              </button>
             </div>
+
             <ul className="mt-3 space-y-1 border-t border-border pt-3 text-sm text-muted-foreground">
               {pedido.itens_pedido?.map((i) => (
                 <li key={i.id}>
