@@ -91,14 +91,35 @@ function GestaoCardapio() {
     onError: () => toast.error("Não foi possível salvar"),
   });
 
-  const remover = useMutation({
-    mutationFn: excluirProduto,
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      toast.success("Produto excluído");
-    },
-    onError: () => toast.error("Produto já usado em um pedido"),
-  });
+  const inativar = useMutation({
+  mutationFn: (p: Produto) =>
+    salvarProduto({ ...p, quantidadeInteiros: inteirosDisponiveis(p), ativo: false }),
+  onSuccess: () => {
+    queryClient.invalidateQueries();
+    toast.success("Produto inativado — ele some do cardápio, mas o histórico é preservado.");
+  },
+  onError: () => toast.error("Não foi possível inativar o produto"),
+});
+
+const remover = useMutation({
+  mutationFn: excluirProduto,
+  onSuccess: () => {
+    queryClient.invalidateQueries();
+    toast.success("Produto excluído");
+  },
+  onError: (_err, produtoExcluido) => {
+    const produto = produtos.find((p) => p.id === produtoExcluido);
+    toast.error("Este produto já foi vendido e não pode ser excluído.", {
+      description: "Você pode inativá-lo para que ele saia do cardápio.",
+      action: produto
+        ? {
+            label: "Inativar",
+            onClick: () => inativar.mutate(produto),
+          }
+        : undefined,
+    });
+  },
+});
 
   const alternarAtivo = useMutation({
     mutationFn: (p: Produto) =>
