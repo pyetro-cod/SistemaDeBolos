@@ -92,51 +92,51 @@ function GestaoCardapio() {
   });
 
   const inativar = useMutation({
-  mutationFn: (p: Produto) =>
-    salvarProduto({ ...p, quantidadeInteiros: inteirosDisponiveis(p), ativo: false }),
-  onSuccess: () => {
-    queryClient.invalidateQueries();
-    toast.success("Produto inativado — ele some do cardápio, mas o histórico é preservado.");
-  },
-  onError: () => toast.error("Não foi possível inativar o produto"),
-});
+    mutationFn: (p: Produto) =>
+      salvarProduto({ ...p, quantidadeInteiros: inteirosDisponiveis(p), ativo: false }),
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+      toast.success("Produto inativado — ele some do cardápio, mas o histórico é preservado.");
+    },
+    onError: () => toast.error("Não foi possível inativar o produto"),
+  });
 
-const remover = useMutation({
-  mutationFn: excluirProduto,
-  onSuccess: () => {
-    queryClient.invalidateQueries();
-    toast.success("Produto excluído");
-  },
-  onError: (err: unknown, produtoExcluido) => {
-    const produto = produtos.find((p) => p.id === produtoExcluido);
-    const mensagem =
-      err instanceof Error
-        ? err.message
-        : typeof err === "object" && err && "message" in err
-          ? String((err as { message: unknown }).message)
-          : "Erro desconhecido";
+  const remover = useMutation({
+    mutationFn: excluirProduto,
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+      toast.success("Produto excluído");
+    },
+    onError: (err: unknown, produtoExcluidoId) => {
+      console.error("Erro ao excluir produto:", err);
 
-    console.error("Erro ao excluir produto:", err);
+      const codigo =
+        typeof err === "object" && err && "code" in err
+          ? String((err as { code: unknown }).code)
+          : "";
+      const mensagem =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err && "message" in err
+            ? String((err as { message: unknown }).message)
+            : "Erro desconhecido";
 
-    const ehConstraintDeProduto = mensagem.toLowerCase().includes("foreign key") ||
-      mensagem.toLowerCase().includes("violat");
+      // 23503 = violação de foreign key no Postgres (código universal, não depende do texto/idioma)
+      const ehViolacaoDeForeignKey = codigo === "23503";
 
-    toast.error(
-      ehConstraintDeProduto
-        ? "Este produto já foi vendido e não pode ser excluído."
-        : `Não foi possível excluir: ${mensagem}`,
-      ehConstraintDeProduto && produto
-        ? {
-            description: "Você pode inativá-lo para que ele saia do cardápio.",
-            action: {
-              label: "Inativar",
-              onClick: () => inativar.mutate(produto),
-            },
-          }
-        : undefined,
-    );
-  },
-});
+      if (ehViolacaoDeForeignKey) {
+        const produto = produtos.find((p) => p.id === produtoExcluidoId);
+        toast.error("Este produto já foi vendido e não pode ser excluído.", {
+          description: "Você pode inativá-lo para que ele saia do cardápio.",
+          action: produto
+            ? { label: "Inativar", onClick: () => inativar.mutate(produto) }
+            : undefined,
+        });
+      } else {
+        toast.error(`Não foi possível excluir: ${mensagem}`);
+      }
+    },
+  });
 
   const alternarAtivo = useMutation({
     mutationFn: (p: Produto) =>
