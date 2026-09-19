@@ -25,7 +25,7 @@ export type Produto = {
 export type ItemPedido = {
   id: string;
   pedido_id: string;
-  produto_id: string;
+  produto_id: string | null; // pode ser null se o produto foi excluído depois da venda
   nome_produto: string;
   preco_unitario: number;
   quantidade: number;
