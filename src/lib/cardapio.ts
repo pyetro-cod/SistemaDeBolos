@@ -121,16 +121,19 @@ export function precoPorTamanho(produto: Produto, tamanho: Tamanho) {
 
 /** Quantos bolos inteiros "fechados" restam (1 inteiro = 2 meios). */
 export function inteirosDisponiveis(produto: Produto) {
-  return Math.floor(produto.estoque_meios / 2);
+  return produto.estoque_meios / 2;
 }
 
+export function formatarInteiros(n: number) {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(".", ",");
+}
 /**
  * Disponibilidade por tamanho: enquanto houver ao menos 1 bolo inteiro,
  * tanto Inteiro quanto Metade ficam disponíveis. Ao zerar os inteiros,
  * a opção Metade também é desabilitada (mesmo que sobre 1 meio avulso).
  */
-export function disponivelPorTamanho(produto: Produto, _tamanho: Tamanho) {
-  return inteirosDisponiveis(produto) >= 1;
+export function disponivelPorTamanho(produto: Produto, tamanho: Tamanho) {
+  return tamanho === "inteiro" ? produto.estoque_meios >= 2 : produto.estoque_meios >= 1;
 }
 
 const db = supabase as unknown as {
@@ -345,9 +348,9 @@ export async function salvarProduto(
   produto: Partial<Produto> & { id?: string; quantidadeInteiros?: number },
 ) {
   const estoque_meios =
-    produto.quantidadeInteiros !== undefined
-      ? Math.max(0, Math.round(produto.quantidadeInteiros)) * 2
-      : (produto.estoque_meios ?? 0);
+  produto.quantidadeInteiros !== undefined
+    ? Math.max(0, Math.round(produto.quantidadeInteiros * 2))
+    : (produto.estoque_meios ?? 0);
 
   const payload = {
     estabelecimento_id: ESTABELECIMENTO_ID,

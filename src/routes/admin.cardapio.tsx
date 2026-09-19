@@ -18,6 +18,7 @@ export const Route = createFileRoute("/admin/cardapio")({
     meta: [
       { title: "Gestão de cardápio — Cardápio Digital" },
       {
+        
         name: "description",
         content: "Crie, edite e organize os bolos por categoria, preço, estoque e disponibilidade.",
       },
@@ -77,8 +78,7 @@ function GestaoCardapio() {
         descricao: r.descricao,
         preco_inteiro: numero(r.precoInteiro),
         preco_metade: numero(r.precoMetade),
-        quantidadeInteiros: Math.max(0, Math.round(numero(r.quantidadeInteiros))),
-        categoria: r.categoria,
+quantidadeInteiros: Math.max(0, Math.round(numero(r.quantidadeInteiros) * 2) / 2),        categoria: r.categoria,
         foto_url: r.foto_url,
         tags: r.tags,
         ativo: r.ativo,
