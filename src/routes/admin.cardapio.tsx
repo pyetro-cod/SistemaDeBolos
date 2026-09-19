@@ -107,17 +107,34 @@ const remover = useMutation({
     queryClient.invalidateQueries();
     toast.success("Produto excluído");
   },
-  onError: (_err, produtoExcluido) => {
+  onError: (err: unknown, produtoExcluido) => {
     const produto = produtos.find((p) => p.id === produtoExcluido);
-    toast.error("Este produto já foi vendido e não pode ser excluído.", {
-      description: "Você pode inativá-lo para que ele saia do cardápio.",
-      action: produto
+    const mensagem =
+      err instanceof Error
+        ? err.message
+        : typeof err === "object" && err && "message" in err
+          ? String((err as { message: unknown }).message)
+          : "Erro desconhecido";
+
+    console.error("Erro ao excluir produto:", err);
+
+    const ehConstraintDeProduto = mensagem.toLowerCase().includes("foreign key") ||
+      mensagem.toLowerCase().includes("violat");
+
+    toast.error(
+      ehConstraintDeProduto
+        ? "Este produto já foi vendido e não pode ser excluído."
+        : `Não foi possível excluir: ${mensagem}`,
+      ehConstraintDeProduto && produto
         ? {
-            label: "Inativar",
-            onClick: () => inativar.mutate(produto),
+            description: "Você pode inativá-lo para que ele saia do cardápio.",
+            action: {
+              label: "Inativar",
+              onClick: () => inativar.mutate(produto),
+            },
           }
         : undefined,
-    });
+    );
   },
 });
 
