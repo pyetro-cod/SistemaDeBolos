@@ -13,6 +13,7 @@ import {
   Sparkles,
   QrCode,
 } from "lucide-react";
+
 import {
   avancarStatus,
   brl,
@@ -25,6 +26,7 @@ import {
   TIPO_ENTREGA_LABEL,
   FORMA_PAGAMENTO_LABEL,
 } from "@/lib/cardapio";
+
 import {
   calcularIntervalo,
   deslocarReferencia,
@@ -33,6 +35,7 @@ import {
   PERIODO_LABEL,
   type Periodo,
 } from "@/lib/relatorios";
+
 import { StatusPedido } from "@/components/status-badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -46,8 +49,14 @@ export const Route = createFileRoute("/admin/comandas")({
         name: "description",
         content: "Acompanhe os pedidos em andamento e avance o status até a entrega.",
       },
-      { property: "og:title", content: "Pedidos ativos — Cardápio Digital" },
-      { property: "og:description", content: "Pedidos em andamento, em tempo real." },
+      {
+        property: "og:title",
+        content: "Pedidos ativos — Cardápio Digital",
+      },
+      {
+        property: "og:description",
+        content: "Pedidos em andamento, em tempo real.",
+      },
     ],
   }),
   component: Pedidos,
@@ -57,6 +66,7 @@ const PERIODOS: Periodo[] = ["dia", "semana", "mes", "ano"];
 
 function Pedidos() {
   const queryClient = useQueryClient();
+
   const [periodo, setPeriodo] = useState<Periodo>("dia");
   const [referencia, setReferencia] = useState(() => new Date());
 
@@ -73,6 +83,7 @@ function Pedidos() {
   // Mais recente primeiro + filtrado pelo período selecionado.
   const pedidos = useMemo(() => {
     const filtrados = filtrarPedidosPorIntervalo(todosPedidosAtivos, inicio, fim);
+
     return [...filtrados].sort(
       (a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime(),
     );
@@ -101,10 +112,13 @@ function Pedidos() {
 
   useEffect(() => {
     if (naoVistos.length === 0) return;
+
     const t = setTimeout(() => {
       marcarVisualizado(naoVistos).then(() => queryClient.invalidateQueries());
     }, 4000);
+
     return () => clearTimeout(t);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [naoVistos.join(",")]);
 
@@ -113,6 +127,7 @@ function Pedidos() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl">Pedidos ativos</h1>
+
           <p className="mt-1 text-sm text-muted-foreground">
             {pedidos.length} pedido(s) em andamento.
           </p>
@@ -150,9 +165,11 @@ function Pedidos() {
             <PopoverTrigger asChild>
               <button className="inline-flex min-w-[11rem] items-center justify-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium capitalize transition-colors hover:bg-accent">
                 <CalendarDays className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+
                 {rotuloIntervalo(periodo, referencia)}
               </button>
             </PopoverTrigger>
+
             <PopoverContent className="w-auto p-0" align="end">
               <Calendar
                 mode="single"
@@ -179,11 +196,14 @@ function Pedidos() {
             Nenhum pedido em aberto nesse período.
           </p>
         )}
+
         {pedidos.map((pedido) => {
           const next = proximoStatus(pedido.status);
+
           const novo = pedido.status === "recebido" && !pedido.visualizado;
-          const aguardandoPix =
-            pedido.forma_pagamento === "pix" && !pedido.pagamento_confirmado;
+
+          const aguardandoPix = pedido.forma_pagamento === "pix" && !pedido.pagamento_confirmado;
+
           return (
             <article
               key={pedido.id}
@@ -196,23 +216,30 @@ function Pedidos() {
                     Novo pedido
                   </span>
                 )}
+
                 <span className="text-sm font-semibold">{pedido.nome_cliente || "Cliente"}</span>
+
                 <StatusPedido status={pedido.status} tipoEntrega={pedido.tipo_entrega} />
+
                 <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                   {pedido.tipo_entrega === "entrega" ? (
                     <Truck className="size-3.5" strokeWidth={1.5} />
                   ) : (
                     <Store className="size-3.5" strokeWidth={1.5} />
                   )}
+
                   {TIPO_ENTREGA_LABEL[pedido.tipo_entrega]}
                 </span>
+
                 <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Clock className="size-3.5" strokeWidth={1.5} />
+
                   {new Date(pedido.criado_em).toLocaleTimeString("pt-BR", {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
                 </span>
+
                 <span className="ml-auto text-sm font-medium">{brl(pedido.total)}</span>
               </div>
 
@@ -278,10 +305,28 @@ function Pedidos() {
                       {i.quantidade}× {i.nome_produto} ({TAMANHO_LABEL[i.tamanho]})
                       {i.observacoes ? ` — ${i.observacoes}` : ""}
                     </span>
+
                     <span>{brl(i.preco_unitario * i.quantidade)}</span>
                   </li>
                 ))}
               </ul>
+
+              {/* VALOR DA TAXA + TOTAL */}
+              <div className="mt-3 border-t border-border pt-3">
+                {pedido.tipo_entrega === "entrega" && pedido.taxa_entrega > 0 && (
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Taxa de entrega</span>
+
+                    <span>{brl(pedido.taxa_entrega)}</span>
+                  </div>
+                )}
+
+                <div className="mt-1 flex justify-between text-sm font-medium">
+                  <span>Total</span>
+
+                  <span>{brl(pedido.total)}</span>
+                </div>
+              </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {aguardandoPix && (
