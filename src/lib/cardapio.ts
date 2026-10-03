@@ -3,9 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 export const ESTABELECIMENTO_ID = "11111111-1111-1111-1111-111111111111";
 
 export type PedidoStatus = "recebido" | "preparo" | "pronto" | "entregue" | "fechado";
+
 export type TipoEntrega = "retirada" | "entrega";
+
 export type FormaPagamento = "pix" | "cartao" | "dinheiro";
+
 export type Tamanho = "inteiro" | "metade";
+
 export type Origem = "online" | "balcao";
 
 export type Produto = {
@@ -14,8 +18,10 @@ export type Produto = {
   descricao: string | null;
   preco_inteiro: number;
   preco_metade: number;
+
   /** estoque em "meios": 1 bolo inteiro = 2 meios */
   estoque_meios: number;
+
   foto_url: string | null;
   categoria: string;
   tags: string[];
@@ -48,11 +54,18 @@ export type Pedido = {
   referencia: string | null;
 
   forma_pagamento: FormaPagamento;
+
+  valor_para_troco: number | null;
+  troco: number | null;
+
   total: number;
   taxa_entrega: number;
+
   origem: Origem;
+
   visualizado: boolean;
   pagamento_confirmado: boolean;
+
   criado_em: string;
   atualizado_em: string;
 
@@ -69,7 +82,10 @@ export const STATUS_LABEL: Record<PedidoStatus, string> = {
   fechado: "Concluído",
 };
 
-/** Rótulo do status "pronto", que muda conforme o tipo de entrega do pedido. */
+/**
+ * Rótulo do status "pronto", que muda conforme
+ * o tipo de entrega do pedido.
+ */
 export function statusLabel(status: PedidoStatus, tipoEntrega: TipoEntrega) {
   if (status === "pronto") {
     return tipoEntrega === "entrega" ? "Saiu para entrega" : "Pronto para retirada";
@@ -95,21 +111,33 @@ export const TAMANHO_LABEL: Record<Tamanho, string> = {
 };
 
 export function traduzErroPedido(mensagem: string) {
-  if (mensagem.includes("estoque insuficiente"))
+  if (mensagem.includes("estoque insuficiente")) {
     return mensagem.replace("estoque insuficiente para", "Estoque insuficiente para");
+  }
 
-  if (mensagem.includes("produto indisponível"))
+  if (mensagem.includes("produto indisponível")) {
     return "Um dos produtos ficou indisponível. Atualize a página.";
+  }
 
-  if (mensagem.includes("nome do cliente")) return "Preencha seu nome.";
+  if (mensagem.includes("nome do cliente")) {
+    return "Preencha seu nome.";
+  }
 
-  if (mensagem.includes("tipo_entrega")) return "Escolha uma forma de entrega.";
+  if (mensagem.includes("tipo_entrega")) {
+    return "Escolha uma forma de entrega.";
+  }
 
-  if (mensagem.includes("forma_pagamento")) return "Escolha uma forma de pagamento.";
+  if (mensagem.includes("forma_pagamento")) {
+    return "Escolha uma forma de pagamento.";
+  }
 
-  if (mensagem.includes("pedido sem itens")) return "Seu carrinho está vazio.";
+  if (mensagem.includes("pedido sem itens")) {
+    return "Seu carrinho está vazio.";
+  }
 
-  if (mensagem.includes("venda sem itens")) return "Adicione ao menos um item.";
+  if (mensagem.includes("venda sem itens")) {
+    return "Adicione ao menos um item.";
+  }
 
   return mensagem;
 }
@@ -135,7 +163,10 @@ export function precoPorTamanho(produto: Produto, tamanho: Tamanho) {
   return tamanho === "inteiro" ? produto.preco_inteiro : produto.preco_metade;
 }
 
-/** Quantos bolos inteiros "fechados" restam (1 inteiro = 2 meios). */
+/**
+ * Quantos bolos inteiros "fechados" restam
+ * (1 inteiro = 2 meios).
+ */
 export function inteirosDisponiveis(produto: Produto) {
   return produto.estoque_meios / 2;
 }
@@ -145,9 +176,11 @@ export function formatarInteiros(n: number) {
 }
 
 /**
- * Disponibilidade por tamanho: enquanto houver ao menos 1 bolo inteiro,
- * tanto Inteiro quanto Metade ficam disponíveis. Ao zerar os inteiros,
- * a opção Metade também é desabilitada (mesmo que sobre 1 meio avulso).
+ * Disponibilidade por tamanho: enquanto houver ao menos
+ * 1 bolo inteiro, tanto Inteiro quanto Metade ficam disponíveis.
+ *
+ * Ao zerar os inteiros, a opção Metade também é desabilitada
+ * (mesmo que sobre 1 meio avulso).
  */
 export function disponivelPorTamanho(produto: Produto, tamanho: Tamanho) {
   return tamanho === "inteiro" ? produto.estoque_meios >= 2 : produto.estoque_meios >= 1;
@@ -206,8 +239,15 @@ const PEDIDO_SELECT = "*, itens_pedido(*)";
 function normalizePedido(p: any): Pedido {
   return {
     ...p,
+
     total: Number(p.total),
+
     taxa_entrega: Number(p.taxa_entrega ?? 0),
+
+    valor_para_troco: p.valor_para_troco != null ? Number(p.valor_para_troco) : null,
+
+    troco: p.troco != null ? Number(p.troco) : null,
+
     itens_pedido: (p.itens_pedido ?? []).map((i: any) => ({
       ...i,
       preco_unitario: Number(i.preco_unitario),
@@ -216,7 +256,11 @@ function normalizePedido(p: any): Pedido {
 }
 
 export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
-  const { data, error } = await db.rpc("obter_pedido_publico", { p_id: id }).maybeSingle();
+  const { data, error } = await db
+    .rpc("obter_pedido_publico", {
+      p_id: id,
+    })
+    .maybeSingle();
 
   if (error) {
     throw error;
@@ -228,11 +272,21 @@ export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
 
   return {
     ...data,
+
     telefone: null,
+
     origem: "online",
+
     visualizado: true,
+
     total: Number(data.total),
+
     taxa_entrega: Number(data.taxa_entrega ?? 0),
+
+    valor_para_troco: data.valor_para_troco != null ? Number(data.valor_para_troco) : null,
+
+    troco: data.troco != null ? Number(data.troco) : null,
+
     itens_pedido: (data.itens ?? []).map((i: any) => ({
       ...i,
       pedido_id: data.id,
@@ -241,14 +295,19 @@ export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
   };
 }
 
-/** Busca pedidos por intervalo de datas, independente do status (usado nos relatórios). */
+/**
+ * Busca pedidos por intervalo de datas,
+ * independente do status (usado nos relatórios).
+ */
 export async function fetchPedidosPorPeriodo(inicio: Date, fim: Date): Promise<Pedido[]> {
   const { data, error } = await db
     .from("pedidos")
     .select(PEDIDO_SELECT)
     .gte("criado_em", inicio.toISOString())
     .lte("criado_em", fim.toISOString())
-    .order("criado_em", { ascending: true });
+    .order("criado_em", {
+      ascending: true,
+    });
 
   if (error) {
     throw error;
@@ -262,7 +321,9 @@ export async function fetchPedidosAtivos(): Promise<Pedido[]> {
     .from("pedidos")
     .select(PEDIDO_SELECT)
     .neq("status", "fechado")
-    .order("criado_em", { ascending: true });
+    .order("criado_em", {
+      ascending: true,
+    });
 
   if (error) {
     throw error;
@@ -276,7 +337,9 @@ export async function fetchPedidosFechados(): Promise<Pedido[]> {
     .from("pedidos")
     .select(PEDIDO_SELECT)
     .eq("status", "fechado")
-    .order("atualizado_em", { ascending: false });
+    .order("atualizado_em", {
+      ascending: false,
+    });
 
   if (error) {
     throw error;
@@ -312,13 +375,19 @@ export type NovoItem = {
 export type DadosCliente = {
   nome: string;
   telefone: string;
+
   tipoEntrega: TipoEntrega;
+
   endereco?: string;
   numero?: string;
   complemento?: string;
   bairro?: string;
   referencia?: string;
+
   formaPagamento: FormaPagamento;
+
+  valorParaTroco?: number | null;
+  troco?: number | null;
 };
 
 function itensParaPayload(itens: NovoItem[]) {
@@ -333,7 +402,9 @@ function itensParaPayload(itens: NovoItem[]) {
 export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
   const { data, error } = await db.rpc("criar_pedido_publico", {
     p_nome_cliente: cliente.nome,
+
     p_telefone: cliente.telefone || null,
+
     p_tipo_entrega: cliente.tipoEntrega,
 
     p_endereco: cliente.tipoEntrega === "entrega" ? cliente.endereco || null : null,
@@ -347,6 +418,11 @@ export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
     p_referencia: cliente.tipoEntrega === "entrega" ? cliente.referencia || null : null,
 
     p_forma_pagamento: cliente.formaPagamento,
+
+    p_valor_para_troco: cliente.valorParaTroco ?? null,
+
+    p_troco: cliente.troco ?? null,
+
     p_itens: itensParaPayload(itens),
   });
 
@@ -357,10 +433,14 @@ export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
   return data as string;
 }
 
-/* Registra uma venda feita presencialmente no balcão (não passa pelo fluxo online). */
+/**
+ * Registra uma venda feita presencialmente
+ * no balcão (não passa pelo fluxo online).
+ */
 export async function registrarVendaBalcao(formaPagamento: FormaPagamento, itens: NovoItem[]) {
   const { data, error } = await db.rpc("registrar_venda_balcao", {
     p_forma_pagamento: formaPagamento,
+
     p_itens: itensParaPayload(itens),
   });
 
@@ -424,7 +504,12 @@ export async function marcarVisualizado(pedidoIds: string[]) {
     return;
   }
 
-  const { error } = await db.from("pedidos").update({ visualizado: true }).in("id", pedidoIds);
+  const { error } = await db
+    .from("pedidos")
+    .update({
+      visualizado: true,
+    })
+    .in("id", pedidoIds);
 
   if (error) {
     throw error;
@@ -444,14 +529,23 @@ export async function salvarProduto(
 
   const payload = {
     estabelecimento_id: ESTABELECIMENTO_ID,
+
     nome: produto.nome,
+
     descricao: produto.descricao || null,
+
     preco_inteiro: produto.preco_inteiro ?? 0,
+
     preco_metade: produto.preco_metade ?? 0,
+
     estoque_meios,
+
     foto_url: produto.foto_url || null,
+
     categoria: produto.categoria || "Outros",
+
     tags: produto.tags ?? [],
+
     ativo: produto.ativo ?? true,
   };
 
@@ -481,7 +575,9 @@ export async function excluirProduto(id: string) {
 export async function confirmarPagamentoPix(pedidoId: string) {
   const { error } = await db
     .from("pedidos")
-    .update({ pagamento_confirmado: true })
+    .update({
+      pagamento_confirmado: true,
+    })
     .eq("id", pedidoId);
 
   if (error) {
