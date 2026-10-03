@@ -19,7 +19,9 @@ export type Produto = {
   preco_inteiro: number;
   preco_metade: number;
 
-  /** estoque em "meios": 1 bolo inteiro = 2 meios */
+  /**
+   * estoque em "meios": 1 bolo inteiro = 2 meios
+   */
   estoque_meios: number;
 
   foto_url: string | null;
@@ -123,8 +125,13 @@ export function traduzErroPedido(mensagem: string) {
     return "Preencha seu nome.";
   }
 
+  /*
+   * Não esconder o erro real de tipo_entrega.
+   * Se o banco retornar "tipo_entrega inválido",
+   * essa mensagem será mostrada diretamente.
+   */
   if (mensagem.includes("tipo_entrega")) {
-    return "Escolha uma forma de entrega.";
+    return mensagem;
   }
 
   if (mensagem.includes("forma_pagamento")) {
@@ -386,7 +393,21 @@ export type DadosCliente = {
 
   formaPagamento: FormaPagamento;
 
+  /*
+   * Valor que o cliente informa para receber o troco.
+   *
+   * Exemplo:
+   * Total = R$ 42,00
+   * Valor para troco = R$ 50,00
+   */
   valorParaTroco?: number | null;
+
+  /*
+   * Troco calculado.
+   *
+   * Exemplo:
+   * R$ 50,00 - R$ 42,00 = R$ 8,00
+   */
   troco?: number | null;
 };
 
@@ -419,10 +440,16 @@ export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
 
     p_forma_pagamento: cliente.formaPagamento,
 
+    /*
+     * Troco
+     */
     p_valor_para_troco: cliente.valorParaTroco ?? null,
 
     p_troco: cliente.troco ?? null,
 
+    /*
+     * Itens
+     */
     p_itens: itensParaPayload(itens),
   });
 
@@ -440,7 +467,6 @@ export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
 export async function registrarVendaBalcao(formaPagamento: FormaPagamento, itens: NovoItem[]) {
   const { data, error } = await db.rpc("registrar_venda_balcao", {
     p_forma_pagamento: formaPagamento,
-
     p_itens: itensParaPayload(itens),
   });
 
