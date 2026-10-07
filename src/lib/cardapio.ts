@@ -3,9 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 export const ESTABELECIMENTO_ID = "11111111-1111-1111-1111-111111111111";
 
 export type PedidoStatus = "recebido" | "preparo" | "pronto" | "entregue" | "fechado";
+
 export type TipoEntrega = "retirada" | "entrega";
+
 export type FormaPagamento = "pix" | "cartao" | "dinheiro";
+
 export type Tamanho = "inteiro" | "metade";
+
 export type Origem = "online" | "balcao";
 
 export type Produto = {
@@ -14,8 +18,10 @@ export type Produto = {
   descricao: string | null;
   preco_inteiro: number;
   preco_metade: number;
+
   /** estoque em "meios": 1 bolo inteiro = 2 meios */
   estoque_meios: number;
+
   foto_url: string | null;
   categoria: string;
   tags: string[];
@@ -50,6 +56,10 @@ export type Pedido = {
   forma_pagamento: FormaPagamento;
   total: number;
   taxa_entrega: number;
+
+  // Valor informado pelo cliente para pagamento em dinheiro
+  valor_para_troco: number;
+
   origem: Origem;
   visualizado: boolean;
   pagamento_confirmado: boolean;
@@ -111,6 +121,8 @@ export function traduzErroPedido(mensagem: string) {
 
   if (mensagem.includes("venda sem itens")) return "Adicione ao menos um item.";
 
+  if (mensagem.includes("valor para troco insuficiente")) return mensagem;
+
   return mensagem;
 }
 
@@ -146,8 +158,9 @@ export function formatarInteiros(n: number) {
 
 /**
  * Disponibilidade por tamanho: enquanto houver ao menos 1 bolo inteiro,
- * tanto Inteiro quanto Metade ficam disponíveis. Ao zerar os inteiros,
- * a opção Metade também é desabilitada (mesmo que sobre 1 meio avulso).
+ * tanto Inteiro quanto Metade ficam disponíveis.
+ * Ao zerar os inteiros, a opção Metade também é desabilitada
+ * (mesmo que sobre 1 meio avulso).
  */
 export function disponivelPorTamanho(produto: Produto, tamanho: Tamanho) {
   return tamanho === "inteiro" ? produto.estoque_meios >= 2 : produto.estoque_meios >= 1;
@@ -206,8 +219,13 @@ const PEDIDO_SELECT = "*, itens_pedido(*)";
 function normalizePedido(p: any): Pedido {
   return {
     ...p,
+
     total: Number(p.total),
+
     taxa_entrega: Number(p.taxa_entrega ?? 0),
+
+    valor_para_troco: Number(p.valor_para_troco ?? 0),
+
     itens_pedido: (p.itens_pedido ?? []).map((i: any) => ({
       ...i,
       preco_unitario: Number(i.preco_unitario),
@@ -216,7 +234,11 @@ function normalizePedido(p: any): Pedido {
 }
 
 export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
-  const { data, error } = await db.rpc("obter_pedido_publico", { p_id: id }).maybeSingle();
+  const { data, error } = await db
+    .rpc("obter_pedido_publico", {
+      p_id: id,
+    })
+    .maybeSingle();
 
   if (error) {
     throw error;
@@ -231,8 +253,13 @@ export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
     telefone: null,
     origem: "online",
     visualizado: true,
+
     total: Number(data.total),
+
     taxa_entrega: Number(data.taxa_entrega ?? 0),
+
+    valor_para_troco: Number(data.valor_para_troco ?? 0),
+
     itens_pedido: (data.itens ?? []).map((i: any) => ({
       ...i,
       pedido_id: data.id,
@@ -248,7 +275,9 @@ export async function fetchPedidosPorPeriodo(inicio: Date, fim: Date): Promise<P
     .select(PEDIDO_SELECT)
     .gte("criado_em", inicio.toISOString())
     .lte("criado_em", fim.toISOString())
-    .order("criado_em", { ascending: true });
+    .order("criado_em", {
+      ascending: true,
+    });
 
   if (error) {
     throw error;
@@ -262,7 +291,9 @@ export async function fetchPedidosAtivos(): Promise<Pedido[]> {
     .from("pedidos")
     .select(PEDIDO_SELECT)
     .neq("status", "fechado")
-    .order("criado_em", { ascending: true });
+    .order("criado_em", {
+      ascending: true,
+    });
 
   if (error) {
     throw error;
@@ -276,7 +307,9 @@ export async function fetchPedidosFechados(): Promise<Pedido[]> {
     .from("pedidos")
     .select(PEDIDO_SELECT)
     .eq("status", "fechado")
-    .order("atualizado_em", { ascending: false });
+    .order("atualizado_em", {
+      ascending: false,
+    });
 
   if (error) {
     throw error;
@@ -319,6 +352,9 @@ export type DadosCliente = {
   bairro?: string;
   referencia?: string;
   formaPagamento: FormaPagamento;
+
+  // Valor que o cliente informa para pagamento em dinheiro
+  valorParaTroco?: number;
 };
 
 function itensParaPayload(itens: NovoItem[]) {
@@ -333,7 +369,9 @@ function itensParaPayload(itens: NovoItem[]) {
 export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
   const { data, error } = await db.rpc("criar_pedido_publico", {
     p_nome_cliente: cliente.nome,
+
     p_telefone: cliente.telefone || null,
+
     p_tipo_entrega: cliente.tipoEntrega,
 
     p_endereco: cliente.tipoEntrega === "entrega" ? cliente.endereco || null : null,
@@ -347,6 +385,10 @@ export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
     p_referencia: cliente.tipoEntrega === "entrega" ? cliente.referencia || null : null,
 
     p_forma_pagamento: cliente.formaPagamento,
+
+    p_valor_para_troco:
+      cliente.formaPagamento === "dinheiro" ? Number(cliente.valorParaTroco ?? 0) : 0,
+
     p_itens: itensParaPayload(itens),
   });
 
@@ -424,7 +466,12 @@ export async function marcarVisualizado(pedidoIds: string[]) {
     return;
   }
 
-  const { error } = await db.from("pedidos").update({ visualizado: true }).in("id", pedidoIds);
+  const { error } = await db
+    .from("pedidos")
+    .update({
+      visualizado: true,
+    })
+    .in("id", pedidoIds);
 
   if (error) {
     throw error;
@@ -444,14 +491,23 @@ export async function salvarProduto(
 
   const payload = {
     estabelecimento_id: ESTABELECIMENTO_ID,
+
     nome: produto.nome,
+
     descricao: produto.descricao || null,
+
     preco_inteiro: produto.preco_inteiro ?? 0,
+
     preco_metade: produto.preco_metade ?? 0,
+
     estoque_meios,
+
     foto_url: produto.foto_url || null,
+
     categoria: produto.categoria || "Outros",
+
     tags: produto.tags ?? [],
+
     ativo: produto.ativo ?? true,
   };
 
@@ -481,7 +537,9 @@ export async function excluirProduto(id: string) {
 export async function confirmarPagamentoPix(pedidoId: string) {
   const { error } = await db
     .from("pedidos")
-    .update({ pagamento_confirmado: true })
+    .update({
+      pagamento_confirmado: true,
+    })
     .eq("id", pedidoId);
 
   if (error) {
