@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
   CalendarDays,
@@ -15,9 +14,7 @@ import {
 } from "lucide-react";
 
 import {
-  avancarStatus,
   brl,
-  confirmarPagamentoPix,
   fetchPedidosAtivos,
   marcarVisualizado,
   proximoStatus,
@@ -40,6 +37,11 @@ import { StatusPedido } from "@/components/status-badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import {
+  marcarVisualizadosEmCache,
+  useAvancarStatus,
+  useConfirmarPix,
+} from "@/hooks/use-pedido-mutations";
 
 export const Route = createFileRoute("/admin/comandas")({
   head: () => ({
@@ -89,22 +91,9 @@ function Pedidos() {
     );
   }, [todosPedidosAtivos, inicio, fim]);
 
-  const avancar = useMutation({
-    mutationFn: avancarStatus,
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      toast.success("Status atualizado");
-    },
-  });
+  const avancar = useAvancarStatus("Status atualizado");
 
-  const confirmarPix = useMutation({
-    mutationFn: confirmarPagamentoPix,
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      toast.success("Pagamento PIX confirmado");
-    },
-    onError: () => toast.error("Não foi possível confirmar o pagamento"),
-  });
+  const confirmarPix = useConfirmarPix();
 
   const naoVistos = todosPedidosAtivos
     .filter((p) => p.status === "recebido" && !p.visualizado)
@@ -114,7 +103,9 @@ function Pedidos() {
     if (naoVistos.length === 0) return;
 
     const t = setTimeout(() => {
-      marcarVisualizado(naoVistos).then(() => queryClient.invalidateQueries());
+      marcarVisualizado(naoVistos)
+        .then(() => marcarVisualizadosEmCache(queryClient, naoVistos))
+        .catch((err) => console.error("Erro ao marcar pedidos como vistos:", err));
     }, 4000);
 
     return () => clearTimeout(t);

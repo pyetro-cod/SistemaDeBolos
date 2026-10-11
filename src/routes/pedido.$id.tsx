@@ -46,7 +46,7 @@ export const Route = createFileRoute("/pedido/$id")({
 function AcompanharPedido() {
   const { id } = Route.useParams();
 
-  useRealtimePedidos();
+  useRealtimePedidos(id);
 
   const { data: pedido, isLoading } = useQuery({
     queryKey: ["pedido", id],

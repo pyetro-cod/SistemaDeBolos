@@ -1,10 +1,8 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Truck, Store, Sparkles } from "lucide-react";
 import {
-  avancarStatus,
   fetchPedidosAtivos,
   proximoStatus,
   statusLabel,
@@ -22,6 +20,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { useAvancarStatus } from "@/hooks/use-pedido-mutations";
 
 export const Route = createFileRoute("/admin/cozinha")({
   head: () => ({
@@ -48,7 +47,6 @@ const COLUNA_LABEL: Record<(typeof STATUS_FLUXO)[number], string> = {
 const PERIODOS: Periodo[] = ["dia", "semana", "mes", "ano"];
 
 function Cozinha() {
-  const queryClient = useQueryClient();
   const [periodo, setPeriodo] = useState<Periodo>("dia");
   const [referencia, setReferencia] = useState(() => new Date());
 
@@ -67,13 +65,7 @@ function Cozinha() {
     [todosPedidos, inicio, fim],
   );
 
-  const avancar = useMutation({
-    mutationFn: avancarStatus,
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      toast.success("Pedido movido");
-    },
-  });
+  const avancar = useAvancarStatus("Pedido movido");
 
   return (
     <main className="px-6 py-8">

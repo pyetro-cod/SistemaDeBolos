@@ -85,7 +85,7 @@ quantidadeInteiros: Math.max(0, Math.round(numero(r.quantidadeInteiros) * 2) / 2
       }),
     onSuccess: () => {
       setRascunho(null);
-      queryClient.invalidateQueries();
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
       toast.success("Produto salvo");
     },
     onError: () => toast.error("Não foi possível salvar"),
@@ -95,7 +95,7 @@ quantidadeInteiros: Math.max(0, Math.round(numero(r.quantidadeInteiros) * 2) / 2
     mutationFn: (p: Produto) =>
       salvarProduto({ ...p, quantidadeInteiros: inteirosDisponiveis(p), ativo: false }),
     onSuccess: () => {
-      queryClient.invalidateQueries();
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
       toast.success("Produto inativado — ele some do cardápio, mas o histórico é preservado.");
     },
     onError: () => toast.error("Não foi possível inativar o produto"),
@@ -104,7 +104,7 @@ quantidadeInteiros: Math.max(0, Math.round(numero(r.quantidadeInteiros) * 2) / 2
   const remover = useMutation({
     mutationFn: excluirProduto,
     onSuccess: () => {
-      queryClient.invalidateQueries();
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
       toast.success("Produto excluído");
     },
     onError: (err: unknown, produtoExcluidoId) => {
@@ -141,7 +141,7 @@ quantidadeInteiros: Math.max(0, Math.round(numero(r.quantidadeInteiros) * 2) / 2
   const alternarAtivo = useMutation({
     mutationFn: (p: Produto) =>
       salvarProduto({ ...p, quantidadeInteiros: inteirosDisponiveis(p), ativo: !p.ativo }),
-    onSuccess: () => queryClient.invalidateQueries(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["produtos"] }),
   });
 
   const categorias = Array.from(new Set([...CATEGORIAS, ...produtos.map((p) => p.categoria)]));
