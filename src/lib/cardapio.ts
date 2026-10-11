@@ -534,6 +534,31 @@ export async function excluirProduto(id: string) {
   }
 }
 
+export class ExclusaoBloqueadaError extends Error {}
+
+/** Exclui um pedido e seus itens. Detecta bloqueio silencioso do RLS (0 linhas afetadas). */
+export async function excluirPedido(id: string) {
+  const tentarExcluirPedido = () => db.from("pedidos").delete().eq("id", id).select("id");
+
+  let { data, error } = await tentarExcluirPedido();
+
+  // 23503 = FK violation: itens_pedido without ON DELETE CASCADE, remove items first
+  if (error?.code === "23503") {
+    const { error: erroItens } = await db.from("itens_pedido").delete().eq("pedido_id", id);
+    if (erroItens) throw erroItens;
+    ({ data, error } = await tentarExcluirPedido());
+  }
+
+  if (error) throw error;
+
+  // RLS without a DELETE policy returns no error, just zero affected rows
+  if (!data || data.length === 0) {
+    throw new ExclusaoBloqueadaError(
+      "O banco não permitiu excluir o pedido (falta permissão de DELETE na tabela pedidos).",
+    );
+  }
+}
+
 export async function confirmarPagamentoPix(pedidoId: string) {
   const { error } = await db
     .from("pedidos")

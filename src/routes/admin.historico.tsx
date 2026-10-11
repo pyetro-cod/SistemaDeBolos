@@ -2,11 +2,21 @@ import { useMemo, useState } from "react";
 
 import { createFileRoute } from "@tanstack/react-router";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { toast } from "sonner";
 
 import { CalendarDays, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
-import { brl, fetchPedidosFechados, TAMANHO_LABEL, TIPO_ENTREGA_LABEL } from "@/lib/cardapio";
+import {
+  brl,
+  excluirPedido,
+  ExclusaoBloqueadaError,
+  fetchPedidosFechados,
+  TAMANHO_LABEL,
+  TIPO_ENTREGA_LABEL,
+  type Pedido,
+} from "@/lib/cardapio";
 
 import {
   calcularIntervalo,
@@ -20,6 +30,17 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { Calendar } from "@/components/ui/calendar";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { cn } from "@/lib/utils";
 
@@ -51,6 +72,10 @@ function Historico() {
 
   const [referencia, setReferencia] = useState(() => new Date());
 
+  const [pedidoParaExcluir, setPedidoParaExcluir] = useState<Pedido | null>(null);
+
+  const queryClient = useQueryClient();
+
   const { data: todosPedidos = [] } = useQuery({
     queryKey: ["pedidos", "fechados"],
     queryFn: fetchPedidosFechados,
@@ -67,6 +92,25 @@ function Historico() {
   );
 
   const total = filtrados.reduce((a, p) => a + p.total, 0);
+
+  const excluir = useMutation({
+    mutationFn: (pedido: Pedido) => excluirPedido(pedido.id),
+    onSuccess: () => {
+      setPedidoParaExcluir(null);
+      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+      toast.success("Pedido excluído do histórico");
+    },
+    onError: (err: unknown) => {
+      console.error("Erro ao excluir pedido:", err);
+      const mensagem =
+        err instanceof ExclusaoBloqueadaError
+          ? err.message
+          : typeof err === "object" && err && "message" in err
+            ? String((err as { message: unknown }).message)
+            : "Erro desconhecido";
+      toast.error(`Não foi possível excluir: ${mensagem}`);
+    },
+  });
 
   return (
     <main className="px-6 py-8">
@@ -169,6 +213,8 @@ function Historico() {
 
               <button
                 type="button"
+                onClick={() => setPedidoParaExcluir(pedido)}
+                disabled={excluir.isPending}
                 aria-label={`Apagar pedido de ${pedido.nome_cliente || "Cliente"}`}
                 className="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-red-500 hover:bg-red-50 hover:text-red-500"
               >
@@ -186,6 +232,39 @@ function Historico() {
           </article>
         ))}
       </div>
+
+      <AlertDialog
+        open={pedidoParaExcluir !== null}
+        onOpenChange={(aberto) => !aberto && !excluir.isPending && setPedidoParaExcluir(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir este pedido?</AlertDialogTitle>
+
+            <AlertDialogDescription>
+              O pedido de {pedidoParaExcluir?.nome_cliente || "Cliente"} (
+              {pedidoParaExcluir ? brl(pedidoParaExcluir.total) : ""}) será removido
+              permanentemente e deixará de contar no faturamento. Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={excluir.isPending}>Cancelar</AlertDialogCancel>
+
+            <AlertDialogAction
+              disabled={excluir.isPending}
+              onClick={(e) => {
+                // keep dialog open until the request finishes
+                e.preventDefault();
+                if (pedidoParaExcluir) excluir.mutate(pedidoParaExcluir);
+              }}
+              className="bg-red-500 text-white hover:bg-red-600"
+            >
+              {excluir.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }
