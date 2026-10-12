@@ -263,6 +263,8 @@ export type DadosCliente = {
   bairro?: string;
   referencia?: string;
   formaPagamento: FormaPagamento;
+  /** Com quanto o cliente vai pagar (só dinheiro com troco); null nos demais casos. */
+  valorRecebido?: number | null;
 };
 
 function itensParaPayload(itens: NovoItem[]) {
@@ -291,6 +293,12 @@ export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
     p_referencia: cliente.tipoEntrega === "entrega" ? cliente.referencia || null : null,
 
     p_forma_pagamento: cliente.formaPagamento,
+
+    p_valor_para_troco:
+      cliente.formaPagamento === "dinheiro" && Number.isFinite(cliente.valorRecebido)
+        ? cliente.valorRecebido
+        : null,
+
     p_itens: itensParaPayload(itens),
   });
 

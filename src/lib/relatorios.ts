@@ -90,6 +90,16 @@ export type Metricas = {
   formasPagamento: FormaPagamentoResumo[];
 };
 
+/** PIX só conta pro relatório se o pagamento já foi confirmado; outras formas contam sempre. */
+export function pedidoValidoParaRelatorio(pedido: Pedido) {
+  if (pedido.forma_pagamento === "pix") return pedido.pagamento_confirmado;
+  return true;
+}
+
+export function filtrarPedidosValidos(pedidos: Pedido[]) {
+  return pedidos.filter(pedidoValidoParaRelatorio);
+}
+
 export function calcularMetricas(pedidos: Pedido[]): Metricas {
   const totalPedidos = pedidos.length;
   const faturamento = pedidos.reduce((a, p) => a + p.total, 0);

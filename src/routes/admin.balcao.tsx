@@ -83,7 +83,9 @@ function VendaBalcao() {
       toast.success("Venda registrada!");
       setItens([]);
       setValorRecebido("");
-      queryClient.invalidateQueries();
+      // a counter sale creates an order and consumes stock
+      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
     },
     onError: (err) => {
       const msg =

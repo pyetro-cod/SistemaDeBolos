@@ -1,16 +1,26 @@
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { ArrowRight, Truck, Store, Sparkles } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Truck, Store, Sparkles } from "lucide-react";
 import {
-  avancarStatus,
   fetchPedidosAtivos,
   proximoStatus,
   statusLabel,
   STATUS_FLUXO,
   TAMANHO_LABEL,
 } from "@/lib/cardapio";
+import {
+  calcularIntervalo,
+  deslocarReferencia,
+  filtrarPedidosPorIntervalo,
+  rotuloIntervalo,
+  PERIODO_LABEL,
+  type Periodo,
+} from "@/lib/relatorios";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { useAvancarStatus } from "@/hooks/use-pedido-mutations";
 
 export const Route = createFileRoute("/admin/cozinha")({
   head: () => ({
@@ -34,27 +44,93 @@ const COLUNA_LABEL: Record<(typeof STATUS_FLUXO)[number], string> = {
   entregue: "Finalizado",
 };
 
+const PERIODOS: Periodo[] = ["dia", "semana", "mes", "ano"];
+
 function Cozinha() {
-  const queryClient = useQueryClient();
-  const { data: pedidos = [] } = useQuery({
+  const [periodo, setPeriodo] = useState<Periodo>("dia");
+  const [referencia, setReferencia] = useState(() => new Date());
+
+  const { data: todosPedidos = [] } = useQuery({
     queryKey: ["pedidos", "ativos"],
     queryFn: fetchPedidosAtivos,
   });
 
-  const avancar = useMutation({
-    mutationFn: avancarStatus,
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      toast.success("Pedido movido");
-    },
-  });
+  const { inicio, fim } = useMemo(
+    () => calcularIntervalo(periodo, referencia),
+    [periodo, referencia],
+  );
+
+  const pedidos = useMemo(
+    () => filtrarPedidosPorIntervalo(todosPedidos, inicio, fim),
+    [todosPedidos, inicio, fim],
+  );
+
+  const avancar = useAvancarStatus("Pedido movido");
 
   return (
     <main className="px-6 py-8">
-      <h1 className="text-2xl">Painel de produção</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Atualização automática conforme os pedidos chegam.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl">Painel de produção</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Atualização automática conforme os pedidos chegam.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="inline-flex rounded-lg border border-border p-1">
+          {PERIODOS.map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriodo(p)}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm transition-colors",
+                periodo === p
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent",
+              )}
+            >
+              {PERIODO_LABEL[p]}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setReferencia((r) => deslocarReferencia(periodo, r, -1))}
+            aria-label="Período anterior"
+            className="size-8 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent"
+          >
+            <ChevronLeft className="mx-auto size-4" strokeWidth={1.5} />
+          </button>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="inline-flex min-w-[11rem] items-center justify-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium capitalize transition-colors hover:bg-accent">
+                <CalendarDays className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+                {rotuloIntervalo(periodo, referencia)}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={referencia}
+                onSelect={(date) => date && setReferencia(date)}
+                captionLayout="dropdown"
+              />
+            </PopoverContent>
+          </Popover>
+
+          <button
+            onClick={() => setReferencia((r) => deslocarReferencia(periodo, r, 1))}
+            aria-label="Próximo período"
+            className="size-8 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent"
+          >
+            <ChevronRight className="mx-auto size-4" strokeWidth={1.5} />
+          </button>
+        </div>
+      </div>
 
       <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {STATUS_FLUXO.map((status) => {
