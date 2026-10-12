@@ -247,42 +247,32 @@ function AcompanharPedido() {
                 </div>
               )}
 
-{/* PAGAMENTO */}
-<div className="border-t border-border pt-4">
-  <span className="text-xs text-muted-foreground">
-    Forma de pagamento
-  </span>
+              {/* PAGAMENTO */}
+              <div className="border-t border-border pt-4">
+                <span className="text-xs text-muted-foreground">Forma de pagamento</span>
 
-  <p className="mt-1 text-sm">
-    {FORMA_PAGAMENTO_LABEL[pedido.forma_pagamento]}
-  </p>
+                <p className="mt-1 text-sm">{FORMA_PAGAMENTO_LABEL[pedido.forma_pagamento]}</p>
 
-  {/* TROCO */}
-  {pedido.forma_pagamento === "dinheiro" &&
-    Number(pedido.valor_para_troco) > 0 && (
-      <div className="mt-3 rounded-lg border border-border bg-muted/40 p-3">
-        <div className="flex justify-between gap-3 text-sm">
-          <span className="text-muted-foreground">
-            Cliente paga com
-          </span>
+                {/* TROCO */}
+                {pedido.forma_pagamento === "dinheiro" && Number(pedido.valor_para_troco) > 0 && (
+                  <div className="mt-3 rounded-lg border border-border bg-muted/40 p-3">
+                    <div className="flex justify-between gap-3 text-sm">
+                      <span className="text-muted-foreground">Cliente paga com</span>
 
-          <span className="font-medium">
-            {brl(Number(pedido.valor_para_troco))}
-          </span>
-        </div>
+                      <span className="font-medium">{brl(Number(pedido.valor_para_troco))}</span>
+                    </div>
 
-        <div className="mt-2 flex justify-between gap-3 text-sm">
-          <span className="text-muted-foreground">
-            Troco
-          </span>
+                    <div className="mt-2 flex justify-between gap-3 text-sm">
+                      <span className="text-muted-foreground">Troco</span>
 
-          <span className="font-semibold text-green-600">
-            {brl(Number(pedido.troco))}
-          </span>
-        </div>
-      </div>
-    )}
-</div>
+                      <span className="font-semibold text-green-600">
+                        {brl(Number(pedido.troco))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* ITENS DO PEDIDO */}
             <ul className="mt-4 space-y-1.5 border-t border-border pt-3">
