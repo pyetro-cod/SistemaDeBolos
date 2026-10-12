@@ -49,6 +49,10 @@ export type Pedido = {
 
   forma_pagamento: FormaPagamento;
   total: number;
+  taxa_entrega: number;
+  valor_para_troco: number | null;
+  troco: number;
+
   origem: Origem;
   visualizado: boolean;
   pagamento_confirmado: boolean;
@@ -277,6 +281,11 @@ function itensParaPayload(itens: NovoItem[]) {
 }
 
 export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
+  const valorRecebido =
+    cliente.formaPagamento === "dinheiro" && Number.isFinite(cliente.valorRecebido)
+      ? Number(cliente.valorRecebido)
+      : 0;
+
   const { data, error } = await db.rpc("criar_pedido_publico", {
     p_nome_cliente: cliente.nome,
     p_telefone: cliente.telefone || null,
@@ -294,15 +303,17 @@ export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
 
     p_forma_pagamento: cliente.formaPagamento,
 
-    p_valor_para_troco:
-      cliente.formaPagamento === "dinheiro" && Number.isFinite(cliente.valorRecebido)
-        ? cliente.valorRecebido
-        : null,
+    p_valor_para_troco: cliente.formaPagamento === "dinheiro" ? valorRecebido : 0,
+
+    p_troco: 0,
 
     p_itens: itensParaPayload(itens),
   });
 
-  if (error) throw error;
+  if (error) {
+    console.error("Erro ao criar pedido:", error);
+    throw error;
+  }
 
   return data as string;
 }
@@ -381,6 +392,31 @@ export async function salvarProduto(
 export async function excluirProduto(id: string) {
   const { error } = await db.from("produtos").delete().eq("id", id);
   if (error) throw error;
+}
+
+export class ExclusaoBloqueadaError extends Error {}
+
+/** Exclui um pedido e seus itens. Detecta bloqueio silencioso do RLS (0 linhas afetadas). */
+export async function excluirPedido(id: string) {
+  const tentarExcluirPedido = () => db.from("pedidos").delete().eq("id", id).select("id");
+
+  let { data, error } = await tentarExcluirPedido();
+
+  // 23503 = FK violation: itens_pedido without ON DELETE CASCADE, remove items first
+  if (error?.code === "23503") {
+    const { error: erroItens } = await db.from("itens_pedido").delete().eq("pedido_id", id);
+    if (erroItens) throw erroItens;
+    ({ data, error } = await tentarExcluirPedido());
+  }
+
+  if (error) throw error;
+
+  // RLS without a DELETE policy returns no error, just zero affected rows
+  if (!data || data.length === 0) {
+    throw new ExclusaoBloqueadaError(
+      "O banco não permitiu excluir o pedido (falta permissão de DELETE na tabela pedidos).",
+    );
+  }
 }
 
 export async function confirmarPagamentoPix(pedidoId: string) {
