@@ -285,7 +285,7 @@ function itensParaPayload(itens: NovoItem[]) {
 
 export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
   const precisaTroco = cliente.formaPagamento === "dinheiro" && cliente.precisaTroco === "sim";
-
+  alert("A função criarPedido foi executada!");
   const valorParaTroco =
     precisaTroco && cliente.valorRecebido != null && Number.isFinite(cliente.valorRecebido)
       ? Number(cliente.valorRecebido)
