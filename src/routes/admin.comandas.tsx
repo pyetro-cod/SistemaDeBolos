@@ -37,6 +37,7 @@ import { StatusPedido } from "@/components/status-badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+
 import {
   marcarVisualizadosEmCache,
   useAvancarStatus,
@@ -92,7 +93,6 @@ function Pedidos() {
   }, [todosPedidosAtivos, inicio, fim]);
 
   const avancar = useAvancarStatus("Status atualizado");
-
   const confirmarPix = useConfirmarPix();
 
   const naoVistos = todosPedidosAtivos
@@ -115,6 +115,7 @@ function Pedidos() {
 
   return (
     <main className="px-6 py-8">
+      {/* CABEÇALHO */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl">Pedidos ativos</h1>
@@ -125,6 +126,7 @@ function Pedidos() {
         </div>
       </div>
 
+      {/* FILTROS DE PERÍODO */}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
         <div className="inline-flex rounded-lg border border-border p-1">
           {PERIODOS.map((p) => (
@@ -156,7 +158,6 @@ function Pedidos() {
             <PopoverTrigger asChild>
               <button className="inline-flex min-w-[11rem] items-center justify-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium capitalize transition-colors hover:bg-accent">
                 <CalendarDays className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
-
                 {rotuloIntervalo(periodo, referencia)}
               </button>
             </PopoverTrigger>
@@ -181,6 +182,7 @@ function Pedidos() {
         </div>
       </div>
 
+      {/* LISTA DE PEDIDOS */}
       <div className="mt-6 space-y-3">
         {pedidos.length === 0 && (
           <p className="panel p-8 text-center text-sm text-muted-foreground">
@@ -195,11 +197,15 @@ function Pedidos() {
 
           const aguardandoPix = pedido.forma_pagamento === "pix" && !pedido.pagamento_confirmado;
 
+          const valorParaTroco = Number(pedido.valor_para_troco ?? 0);
+          const valorTroco = Number(pedido.troco ?? 0);
+
           return (
             <article
               key={pedido.id}
               className={cn("panel p-5", novo && "border-primary/50 ring-1 ring-primary/30")}
             >
+              {/* CABEÇALHO DO PEDIDO */}
               <div className="flex flex-wrap items-center gap-3">
                 {novo && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
@@ -218,13 +224,11 @@ function Pedidos() {
                   ) : (
                     <Store className="size-3.5" strokeWidth={1.5} />
                   )}
-
                   {TIPO_ENTREGA_LABEL[pedido.tipo_entrega]}
                 </span>
 
                 <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Clock className="size-3.5" strokeWidth={1.5} />
-
                   {new Date(pedido.criado_em).toLocaleTimeString("pt-BR", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -234,6 +238,7 @@ function Pedidos() {
                 <span className="ml-auto text-sm font-medium">{brl(pedido.total)}</span>
               </div>
 
+              {/* DADOS DO CLIENTE E ENTREGA */}
               <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
                 {pedido.telefone && (
                   <span>
@@ -271,6 +276,7 @@ function Pedidos() {
                   </span>
                 )}
 
+                {/* FORMA DE PAGAMENTO */}
                 <span className="inline-flex items-center gap-1.5">
                   <strong className="text-foreground">Pagamento:</strong>{" "}
                   {FORMA_PAGAMENTO_LABEL[pedido.forma_pagamento]}
@@ -287,38 +293,57 @@ function Pedidos() {
                     </span>
                   )}
                 </span>
+
+                {/* TROCO */}
+                {pedido.forma_pagamento === "dinheiro" && valorParaTroco > 0 && (
+                  <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 sm:col-span-2">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-muted-foreground">Cliente paga com</span>
+
+                      <span className="font-medium text-foreground">{brl(valorParaTroco)}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-muted-foreground">Troco</span>
+
+                      <span className="font-semibold text-green-600">{brl(valorTroco)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
+              {/* ITENS DO PEDIDO */}
               <ul className="mt-4 space-y-1.5 border-t border-border pt-3">
                 {pedido.itens_pedido?.map((i) => (
-                  <li key={i.id} className="flex justify-between text-sm">
+                  <li key={i.id} className="flex justify-between gap-3 text-sm">
                     <span className="text-muted-foreground">
                       {i.quantidade}× {i.nome_produto} ({TAMANHO_LABEL[i.tamanho]})
                       {i.observacoes ? ` — ${i.observacoes}` : ""}
                     </span>
 
-                    <span>{brl(i.preco_unitario * i.quantidade)}</span>
+                    <span className="whitespace-nowrap">
+                      {brl(i.preco_unitario * i.quantidade)}
+                    </span>
                   </li>
                 ))}
               </ul>
 
-              {/* VALOR DA TAXA + TOTAL */}
+              {/* TAXA DE ENTREGA + TOTAL */}
               <div className="mt-3 border-t border-border pt-3">
                 {pedido.tipo_entrega === "entrega" && pedido.taxa_entrega > 0 && (
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Taxa de entrega</span>
-
                     <span>{brl(pedido.taxa_entrega)}</span>
                   </div>
                 )}
 
                 <div className="mt-1 flex justify-between text-sm font-medium">
                   <span>Total</span>
-
                   <span>{brl(pedido.total)}</span>
                 </div>
               </div>
 
+              {/* AÇÕES DO PEDIDO */}
               <div className="mt-4 flex flex-wrap gap-2">
                 {aguardandoPix && (
                   <button
