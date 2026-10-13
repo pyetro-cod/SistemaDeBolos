@@ -602,10 +602,12 @@ function Carrinho({
 
   const valorRecebidoNumero = Number(valorRecebido.replace(",", "."));
 
+  const valorRecebidoInvalido = valorRecebido !== "" && !Number.isFinite(valorRecebidoNumero);
+
   const trocoInsuficiente =
     formaPagamento === "dinheiro" &&
     precisaTroco === "sim" &&
-    (valorRecebido === "" || valorRecebidoNumero < total);
+    (valorRecebido === "" || valorRecebidoInvalido || valorRecebidoNumero < total);
 
   /*
    * ==========================================
@@ -993,13 +995,14 @@ function Carrinho({
                     <p
                       className={cn(
                         "text-sm font-medium",
-
-                        valorRecebidoNumero < total ? "text-destructive" : "text-success",
+                        trocoInsuficiente ? "text-destructive" : "text-success",
                       )}
                     >
-                      {valorRecebidoNumero < total
-                        ? "O valor informado é menor que o total do pedido."
-                        : `Troco: ${brl(valorRecebidoNumero - total)}`}
+                      {valorRecebidoInvalido
+                        ? "Digite um valor válido. Ex: 50"
+                        : valorRecebidoNumero < total
+                          ? "O valor informado é menor que o total do pedido."
+                          : `Troco: ${brl(valorRecebidoNumero - total)}`}
                     </p>
                   )}
                 </div>

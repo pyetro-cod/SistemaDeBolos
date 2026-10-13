@@ -56,9 +56,8 @@ export type Pedido = {
   forma_pagamento: FormaPagamento;
   total: number;
   taxa_entrega: number;
-
-  // Valor informado pelo cliente para pagamento em dinheiro
-  valor_para_troco: number;
+  valor_para_troco: number | null;
+  troco: number;
 
   origem: Origem;
   visualizado: boolean;
@@ -353,8 +352,10 @@ export type DadosCliente = {
   referencia?: string;
   formaPagamento: FormaPagamento;
 
-  // Valor que o cliente informa para pagamento em dinheiro
-  valorParaTroco?: number;
+  precisaTroco?: "sim" | "nao" | "";
+
+  /** Valor da nota que o cliente vai entregar, quando precisar de troco. */
+  valorRecebido?: number | null;
 };
 
 function itensParaPayload(itens: NovoItem[]) {
@@ -367,6 +368,13 @@ function itensParaPayload(itens: NovoItem[]) {
 }
 
 export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
+  const precisaTroco = cliente.formaPagamento === "dinheiro" && cliente.precisaTroco === "sim";
+
+  const valorParaTroco =
+    precisaTroco && cliente.valorRecebido != null && Number.isFinite(cliente.valorRecebido)
+      ? Number(cliente.valorRecebido)
+      : null;
+
   const { data, error } = await db.rpc("criar_pedido_publico", {
     p_nome_cliente: cliente.nome,
 
@@ -386,13 +394,16 @@ export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
 
     p_forma_pagamento: cliente.formaPagamento,
 
-    p_valor_para_troco:
-      cliente.formaPagamento === "dinheiro" ? Number(cliente.valorParaTroco ?? 0) : 0,
+    p_valor_para_troco: valorParaTroco,
+
+    // O banco deve calcular o troco com base no total real do pedido.
+    p_troco: null,
 
     p_itens: itensParaPayload(itens),
   });
 
   if (error) {
+    console.error("Erro ao criar pedido:", error);
     throw error;
   }
 
