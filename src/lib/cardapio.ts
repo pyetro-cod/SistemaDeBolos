@@ -259,6 +259,8 @@ export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
 
     valor_para_troco: Number(data.valor_para_troco ?? 0),
 
+    troco: Number(data.troco ?? 0),
+
     itens_pedido: (data.itens ?? []).map((i: any) => ({
       ...i,
       pedido_id: data.id,

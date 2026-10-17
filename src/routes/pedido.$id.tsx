@@ -288,6 +288,15 @@ function AcompanharPedido() {
               ))}
             </ul>
 
+            {/* TAXA DE ENTREGA */}
+            {pedido.tipo_entrega === "entrega" && Number(pedido.taxa_entrega) > 0 && (
+              <div className="mt-3 flex justify-between text-sm text-muted-foreground">
+                <span>Taxa de entrega</span>
+
+                <span>{brl(Number(pedido.taxa_entrega))}</span>
+              </div>
+            )}
+
             {/* TOTAL */}
             <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
               <span className="text-sm text-muted-foreground">Total</span>

@@ -3,7 +3,6 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { ChefHat, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -23,7 +22,6 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [modo, setModo] = useState<"entrar" | "criar">("entrar");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,33 +40,13 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (modo === "criar") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password: senha,
-          options: { emailRedirectTo: `${window.location.origin}/admin` },
-        });
-        if (error) throw error;
-        toast.success("Conta criada! Verifique seu e-mail se for solicitado.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
-        if (error) throw error;
-      }
+      // Sign-up is disabled in Supabase Auth; admin accounts are created in the dashboard.
+      const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+      if (error) throw error;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível entrar.");
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleGoogle() {
-    setLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/auth`,
-    });
-    if (error) {
-      setLoading(false);
-      toast.error(error.message ?? "Falha ao entrar com Google.");
     }
   }
 
@@ -79,27 +57,12 @@ function AuthPage() {
           <ChefHat className="size-5" strokeWidth={1.75} />
           <span className="text-sm font-semibold">Painel do lojista</span>
         </div>
-        <h1 className="mt-4 text-2xl font-semibold text-foreground">
-          {modo === "entrar" ? "Entrar" : "Criar conta"}
-        </h1>
+        <h1 className="mt-4 text-2xl font-semibold text-foreground">Entrar</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Área restrita. O cardápio do cliente continua aberto normalmente para os clientes.
         </p>
 
-        <button
-          type="button"
-          onClick={handleGoogle}
-          disabled={loading}
-          className="pill mt-6 flex w-full items-center justify-center gap-2 border border-border bg-card px-4 py-2.5 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-60"
-        >
-          Continuar com Google
-        </button>
-
-        <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="h-px flex-1 bg-border" /> ou <span className="h-px flex-1 bg-border" />
-        </div>
-
-        <form onSubmit={handleEmail} className="space-y-3">
+        <form onSubmit={handleEmail} className="mt-6 space-y-3">
           <div>
             <label className="text-xs font-medium text-muted-foreground" htmlFor="email">
               E-mail
@@ -135,17 +98,9 @@ function AuthPage() {
             className="pill flex w-full items-center justify-center gap-2 bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
             {loading && <Loader2 className="size-4 animate-spin" />}
-            {modo === "entrar" ? "Entrar" : "Criar conta"}
+            Entrar
           </button>
         </form>
-
-        <button
-          type="button"
-          onClick={() => setModo(modo === "entrar" ? "criar" : "entrar")}
-          className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-primary"
-        >
-          {modo === "entrar" ? "Não tem conta? Criar conta" : "Já tem conta? Entrar"}
-        </button>
 
         <div className="mt-6 text-center">
           <Link to="/" className="text-xs text-muted-foreground hover:text-primary">
