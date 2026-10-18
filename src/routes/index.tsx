@@ -338,7 +338,7 @@ function CardProduto({
   const semEstoque = !disponivelPorTamanho(produto, tamanho);
 
   const maxQuantidade =
-    tamanho === "inteiro" ? Math.floor(produto.estoque_meios / 2) : produto.estoque_meios;
+  tamanho === "inteiro" ? Math.floor(produto.estoque_meios / 2) : produto.estoque_meios;
 
   return (
     <div className="panel flex flex-col gap-3 overflow-hidden p-0">
@@ -473,12 +473,15 @@ type DadosClienteCarrinho = DadosCliente & {
   referencia?: string;
   taxaEntrega?: number;
   formaPagamento?: FormaPagamento;
+
   precisaTroco?: "sim" | "nao" | "";
+
   valorRecebido?: number | null;
+
   troco?: number | null;
+
   subtotal?: number;
   total?: number;
-  campoTeste?: string;
 };
 
 /*
@@ -1028,15 +1031,17 @@ function Carrinho({
           onFinalizar({
             nome,
             telefone,
-            campoTeste: "TESTE123",
 
             tipoEntrega,
+
             endereco,
             numero,
             complemento,
             bairro,
             referencia,
+
             taxaEntrega,
+
             formaPagamento,
 
             precisaTroco: formaPagamento === "dinheiro" ? precisaTroco : "",
