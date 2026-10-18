@@ -379,7 +379,6 @@ export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
 
   const { data, error } = await db.rpc("criar_pedido_publico", {
     p_nome_cliente: cliente.nome,
-
     p_telefone: cliente.telefone || null,
 
     p_tipo_entrega: cliente.tipoEntrega,
@@ -397,9 +396,10 @@ export async function criarPedido(cliente: DadosCliente, itens: NovoItem[]) {
     p_forma_pagamento: cliente.formaPagamento,
 
     p_valor_para_troco: valorParaTroco,
-
-    // O banco deve calcular o troco com base no total real do pedido.
     p_troco: null,
+
+    // Campo temporário para verificar se o dado chega ao banco.
+    p_campo_teste: "TESTE123",
 
     p_itens: itensParaPayload(itens),
   });
