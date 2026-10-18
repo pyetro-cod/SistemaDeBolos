@@ -19,7 +19,7 @@ export type Produto = {
   preco_inteiro: number;
   preco_metade: number;
 
-  /** estoque em "meios": 1 bolo inteiro = 2 meios */
+  /** estoque em "meios": 1 bolo inteiro = 2 meios  */
   estoque_meios: number;
 
   foto_url: string | null;

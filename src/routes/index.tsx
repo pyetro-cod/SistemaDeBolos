@@ -338,7 +338,7 @@ function CardProduto({
   const semEstoque = !disponivelPorTamanho(produto, tamanho);
 
   const maxQuantidade =
-  tamanho === "inteiro" ? Math.floor(produto.estoque_meios / 2) : produto.estoque_meios;
+    tamanho === "inteiro" ? Math.floor(produto.estoque_meios / 2) : produto.estoque_meios;
 
   return (
     <div className="panel flex flex-col gap-3 overflow-hidden p-0">
@@ -1021,7 +1021,7 @@ function Carrinho({
       </div>
 
       {/* ======================================= */}
-      {/* FINALIZAR PEDIDO                        */}
+      {/* FINALIZAR PEDIDOs                        */}
       {/* ======================================= */}
 
       <button
