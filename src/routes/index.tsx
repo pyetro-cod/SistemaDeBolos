@@ -592,7 +592,9 @@ function Carrinho({
       (endereco.trim().length > 0 &&
         numero.trim().length > 0 &&
         bairro.trim().length > 0 &&
-        referencia.trim().length > 0));
+        referencia.trim().length > 0)) &&
+    // cash orders must answer "Vai precisar de troco?" so the change info reaches the DB
+    (formaPagamento !== "dinheiro" || precisaTroco !== "");
 
   /*
    * ==========================================
