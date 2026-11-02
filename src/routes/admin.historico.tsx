@@ -31,6 +31,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 import { Calendar } from "@/components/ui/calendar";
 
+import { TrocoBadge } from "@/components/troco-badge";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -204,6 +206,9 @@ function Historico() {
               >
                 {pedido.origem === "balcao" ? "Balcão" : "Online"}
               </span>
+
+              {/* counter sales don't record change, so the badge would always say "sem troco" */}
+              {pedido.origem === "online" && <TrocoBadge pedido={pedido} />}
 
               <span className="text-xs text-muted-foreground">
                 {new Date(pedido.atualizado_em).toLocaleString("pt-BR")}

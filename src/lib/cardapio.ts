@@ -225,6 +225,8 @@ function normalizePedido(p: any): Pedido {
 
     valor_para_troco: Number(p.valor_para_troco ?? 0),
 
+    troco: Number(p.troco ?? 0),
+
     itens_pedido: (p.itens_pedido ?? []).map((i: any) => ({
       ...i,
       preco_unitario: Number(i.preco_unitario),

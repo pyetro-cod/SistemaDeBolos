@@ -34,6 +34,7 @@ import {
 } from "@/lib/relatorios";
 
 import { StatusPedido } from "@/components/status-badge";
+import { TrocoBadge } from "@/components/troco-badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
@@ -216,6 +217,8 @@ function Pedidos() {
                 <span className="text-sm font-semibold">{pedido.nome_cliente || "Cliente"}</span>
 
                 <StatusPedido status={pedido.status} tipoEntrega={pedido.tipo_entrega} />
+
+                <TrocoBadge pedido={pedido} />
 
                 <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                   {pedido.tipo_entrega === "entrega" ? (
