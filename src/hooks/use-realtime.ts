@@ -108,7 +108,10 @@ export function definirSomAtivo(ativo: boolean) {
 /** Toca um bipe curto usando a Web Audio API (sem depender de arquivo de áudio). */
 function tocarBipe() {
   try {
-    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+    const Ctx =
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
     const ctx = new Ctx();
     [880, 1180].forEach((freq, i) => {
       const osc = ctx.createOscillator();

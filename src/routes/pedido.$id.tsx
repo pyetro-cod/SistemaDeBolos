@@ -55,15 +55,17 @@ function AcompanharPedido() {
 
   const pagamentoAnterior = useRef<boolean | undefined>(undefined);
 
-  useEffect(() => {
-    if (!pedido) return;
+  const pagamentoConfirmado = pedido?.pagamento_confirmado;
 
-    if (pagamentoAnterior.current === false && pedido.pagamento_confirmado) {
+  useEffect(() => {
+    if (pagamentoConfirmado === undefined) return;
+
+    if (pagamentoAnterior.current === false && pagamentoConfirmado) {
       toast.success("Pagamento confirmado! Seu pedido já está sendo preparado. 🎉");
     }
 
-    pagamentoAnterior.current = pedido.pagamento_confirmado;
-  }, [pedido?.pagamento_confirmado]);
+    pagamentoAnterior.current = pagamentoConfirmado;
+  }, [pagamentoConfirmado]);
 
   /**
    * Abre o WhatsApp da loja com uma mensagem

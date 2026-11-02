@@ -42,6 +42,8 @@ const COLUNA_LABEL: Record<(typeof STATUS_FLUXO)[number], string> = {
   preparo: "Em preparo",
   pronto: "Saiu / pronto p/ retirada",
   entregue: "Finalizado",
+  // never rendered as a column (STATUS_FLUXO has no "fechado"), required by the PedidoStatus type
+  fechado: "Concluído",
 };
 
 const PERIODOS: Periodo[] = ["dia", "semana", "mes", "ano"];

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
 export const ESTABELECIMENTO_ID = "11111111-1111-1111-1111-111111111111";
 
@@ -165,10 +166,18 @@ export function disponivelPorTamanho(produto: Produto, tamanho: Tamanho) {
   return tamanho === "inteiro" ? produto.estoque_meios >= 2 : produto.estoque_meios >= 1;
 }
 
+// Loosely typed on purpose: the generated types mark every RPC argument as non-null, but the
+// Postgres functions accept NULL (empty address on pickup, no change value, etc.).
 const db = supabase as unknown as {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   from: (table: string) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rpc: (fn: string, args?: Record<string, unknown>) => any;
 };
+
+type ProdutoRow = Tables<"produtos">;
+type PedidoRow = Tables<"pedidos"> & { itens_pedido?: Tables<"itens_pedido">[] | null };
+type ItemPublico = Omit<Tables<"itens_pedido">, "pedido_id" | "criado_em">;
 
 export const ORDEM_CATEGORIAS = ["Bolos", "Doces", "Salgados", "Bebidas", "Outros"];
 
@@ -178,7 +187,7 @@ function ordemCategoria(c: string) {
   return i < 0 ? ORDEM_CATEGORIAS.length : i;
 }
 
-function normalizeProduto(p: any): Produto {
+function normalizeProduto(p: ProdutoRow): Produto {
   return {
     ...p,
     preco_inteiro: Number(p.preco_inteiro),
@@ -215,7 +224,8 @@ export async function fetchProdutos(somenteAtivos = false): Promise<Produto[]> {
 
 const PEDIDO_SELECT = "*, itens_pedido(*)";
 
-function normalizePedido(p: any): Pedido {
+// DB columns are plain text guarded by CHECK constraints; the app types narrow them to unions.
+function normalizePedido(p: PedidoRow): Pedido {
   return {
     ...p,
 
@@ -227,11 +237,11 @@ function normalizePedido(p: any): Pedido {
 
     troco: Number(p.troco ?? 0),
 
-    itens_pedido: (p.itens_pedido ?? []).map((i: any) => ({
+    itens_pedido: (p.itens_pedido ?? []).map((i) => ({
       ...i,
       preco_unitario: Number(i.preco_unitario),
     })),
-  };
+  } as Pedido;
 }
 
 export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
@@ -263,7 +273,7 @@ export async function fetchPedidoPorId(id: string): Promise<Pedido | null> {
 
     troco: Number(data.troco ?? 0),
 
-    itens_pedido: (data.itens ?? []).map((i: any) => ({
+    itens_pedido: ((data.itens ?? []) as ItemPublico[]).map((i) => ({
       ...i,
       pedido_id: data.id,
       preco_unitario: Number(i.preco_unitario),
