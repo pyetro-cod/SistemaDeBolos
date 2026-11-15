@@ -26,7 +26,6 @@ import {
   criarPedido,
   disponivelPorTamanho,
   fetchProdutos,
-  inteirosDisponiveis,
   precoPorTamanho,
   traduzErroPedido,
   type DadosCliente,
@@ -58,11 +57,22 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-
   component: Index,
 });
 
 type ItemCarrinho = NovoItem;
+
+function formatarTelefone(valor: string) {
+  const numeros = valor.replace(/\D/g, "").slice(0, 11);
+
+  if (!numeros) return "";
+  if (numeros.length <= 2) return `(${numeros}`;
+  if (numeros.length <= 7) {
+    return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
+  }
+
+  return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
+}
 
 function Index() {
   const navigate = useNavigate();
@@ -89,26 +99,15 @@ function Index() {
       if (existe) {
         return atual.map((i) =>
           i.produto.id === produto.id && i.tamanho === tamanho
-            ? {
-                ...i,
-                quantidade: i.quantidade + quantidade,
-              }
+            ? { ...i, quantidade: i.quantidade + quantidade }
             : i,
         );
       }
 
-      return [
-        ...atual,
-        {
-          produto,
-          tamanho,
-          quantidade,
-        },
-      ];
+      return [...atual, { produto, tamanho, quantidade }];
     });
 
     toast.success(`${produto.nome} adicionado`);
-
     setCarrinhoAberto(true);
   }
 
@@ -117,37 +116,20 @@ function Index() {
       atual
         .map((i) =>
           i.produto.id === produtoId && i.tamanho === tamanho
-            ? {
-                ...i,
-                quantidade: i.quantidade + delta,
-              }
+            ? { ...i, quantidade: i.quantidade + delta }
             : i,
         )
         .filter((i) => i.quantidade > 0),
     );
   }
 
-  /*
-   * ==========================================
-   * CONTATO PELO WHATSAPP
-   * ==========================================
-   */
-
   function entrarEmContatoWhatsApp() {
     const numeroWhatsApp = "558396420239";
-
     const mensagem = "Olá! Gostaria de entrar em contato com a Queiroz Bolos.";
-
     const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
 
     window.open(url, "_blank");
   }
-
-  /*
-   * ==========================================
-   * CRIAR PEDIDO
-   * ==========================================
-   */
 
   const criar = useMutation({
     mutationFn: (dados: DadosClienteCarrinho) => criarPedido(dados, carrinho),
@@ -163,35 +145,29 @@ function Index() {
           : typeof err === "object" && err && "message" in err
             ? String((err as { message: unknown }).message)
             : "";
+
       toast.error(msg ? traduzErroPedido(msg) : "Não foi possível enviar o pedido");
     },
   });
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-3xl px-5 pb-10">
-      {/* ========================================= */}
-      {/* CABEÇALHO                                 */}
-      {/* ========================================= */}
-
-      <header className="sticky top-0 z-20 -mx-5 border-b border-border bg-background/85 px-5 py-4 backdrop-blur">
-        <div className="flex items-center justify-between">
+    <main className="mx-auto min-h-screen w-full max-w-4xl px-4 pb-12 sm:px-5">
+      <header className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/95 px-4 py-4 shadow-sm backdrop-blur sm:-mx-5 sm:px-5">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <img
               src="/logo.png"
               alt="Queiroz Bolos"
-              className="size-10 shrink-0 rounded-full border border-border object-cover"
+              className="size-12 shrink-0 rounded-full border-2 border-primary/20 object-cover"
             />
 
             <div>
-              <h1 className="text-lg font-semibold leading-tight">Queiroz Bolos</h1>
-
-              <p className="text-xs text-muted-foreground">Bolos inteiros ou metade</p>
+              <h1 className="text-lg font-extrabold leading-tight tracking-tight">Queiroz Bolos</h1>
+              <p className="mt-0.5 text-xs font-medium text-muted-foreground">
+                Bolos inteiros ou metade
+              </p>
             </div>
           </div>
-
-          {/* ===================================== */}
-          {/* MEUS PEDIDOS + CARRINHO                */}
-          {/* ===================================== */}
 
           <div className="flex items-center gap-2">
             <MeusPedidos />
@@ -199,12 +175,14 @@ function Index() {
             <button
               type="button"
               onClick={() => setCarrinhoAberto(true)}
-              className="relative inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
+              className="relative inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 text-sm font-bold text-primary transition-all hover:bg-primary/10"
             >
-              <ShoppingBag className="size-4" strokeWidth={1.5} />
-              Carrinho
+              <ShoppingBag className="size-5" strokeWidth={2} />
+              <span className="hidden sm:inline">Carrinho</span>
+              <span className="sm:hidden">Sacola</span>
+
               {qtdCarrinho > 0 && (
-                <span className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
+                <span className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-primary text-xs font-extrabold text-primary-foreground shadow">
                   {qtdCarrinho}
                 </span>
               )}
@@ -213,28 +191,29 @@ function Index() {
         </div>
       </header>
 
-      {/* ========================================= */}
-      {/* APRESENTAÇÃO                              */}
-      {/* ========================================= */}
+      <section className="rounded-2xl bg-primary/5 px-5 py-8 mt-6 sm:px-7 sm:py-10">
+        <span className="text-xs font-extrabold uppercase tracking-widest text-primary">
+          Feito com carinho para você
+        </span>
 
-      <section className="pt-8">
-        <h2 className="text-2xl leading-tight">Os melhores bolos da cidade.</h2>
+        <h2 className="mt-2 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
+          Os melhores bolos da cidade.
+        </h2>
 
-        <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-          Escolha entre bolos inteiros ou metade. Faça seu pedido online e retire na loja ou receba
-          em casa.
+        <p className="mt-3 max-w-lg text-base leading-relaxed text-muted-foreground">
+          Escolha seu bolo favorito, selecione o tamanho e faça seu pedido online. Você pode retirar
+          na loja ou receber em casa.
         </p>
       </section>
 
-      {/* ========================================= */}
-      {/* PRODUTOS                                  */}
-      {/* ========================================= */}
-
       {categorias.map((categoria) => (
-        <section key={categoria} className="mt-8">
-          <h3 className="text-sm font-semibold text-muted-foreground">{categoria}</h3>
+        <section key={categoria} className="mt-9">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="h-7 w-1.5 rounded-full bg-primary" />
+            <h3 className="text-xl font-extrabold tracking-tight">{categoria}</h3>
+          </div>
 
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2">
             {produtos
               .filter((p) => p.categoria === categoria)
               .map((p) => (
@@ -244,19 +223,15 @@ function Index() {
         </section>
       ))}
 
-      {/* ========================================= */}
-      {/* NENHUM PRODUTO                            */}
-      {/* ========================================= */}
-
       {produtos.length === 0 && (
-        <p className="panel mt-8 p-8 text-center text-sm text-muted-foreground">
-          Nenhum bolo disponível no momento.
-        </p>
+        <div className="mt-8 rounded-2xl border border-border bg-card p-10 text-center">
+          <ShoppingBag className="mx-auto size-10 text-muted-foreground" />
+          <p className="mt-3 font-bold">Nenhum bolo disponível no momento.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Volte em breve para conferir nossas opções.
+          </p>
+        </div>
       )}
-
-      {/* ========================================= */}
-      {/* BOTÃO FLUTUANTE DO WHATSAPP              */}
-      {/* ========================================= */}
 
       {!carrinhoAberto && (
         <button
@@ -264,43 +239,40 @@ function Index() {
           onClick={entrarEmContatoWhatsApp}
           aria-label="Falar com a Queiroz Bolos pelo WhatsApp"
           title="Fale conosco pelo WhatsApp"
-          className="fixed bottom-6 right-5 z-40 flex size-14 items-center justify-center rounded-full bg-green-600 text-white shadow-lg transition-all duration-200 hover:scale-110 hover:bg-green-700 active:scale-95"
+          className="fixed bottom-6 right-5 z-40 flex size-14 items-center justify-center rounded-full bg-green-600 text-white shadow-xl transition-all duration-200 hover:scale-110 hover:bg-green-700 active:scale-95"
         >
-          <MessageCircle className="size-7" strokeWidth={2} />
+          <MessageCircle className="size-7" strokeWidth={2.5} />
         </button>
       )}
 
-      {/* ========================================= */}
-      {/* CARRINHO LATERAL                         */}
-      {/* ========================================= */}
-
       {carrinhoAberto && (
         <div
-          className="fixed inset-0 z-30 flex justify-end bg-black/50"
+          className="fixed inset-0 z-30 flex justify-end bg-black/60 backdrop-blur-[2px]"
           onClick={() => setCarrinhoAberto(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex h-full w-full max-w-md flex-col border-l border-border bg-background"
+            className="flex h-full w-full max-w-md flex-col border-l border-border bg-background shadow-2xl"
           >
-            {/* CABEÇALHO DO CARRINHO */}
-
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <h2 className="text-sm font-semibold">Meu carrinho</h2>
+            <div className="flex items-center justify-between border-b border-border bg-background px-5 py-5">
+              <div>
+                <h2 className="text-lg font-extrabold">Meu carrinho</h2>
+                <p className="text-xs text-muted-foreground">
+                  Confira seu pedido antes de finalizar
+                </p>
+              </div>
 
               <button
                 type="button"
                 onClick={() => setCarrinhoAberto(false)}
                 aria-label="Fechar carrinho"
-                className="size-8 rounded-lg text-muted-foreground transition-colors hover:bg-accent"
+                className="flex size-9 items-center justify-center rounded-xl border border-border text-muted-foreground transition-colors hover:bg-accent"
               >
-                <X className="mx-auto size-4" strokeWidth={1.5} />
+                <X className="size-5" strokeWidth={2} />
               </button>
             </div>
 
-            {/* CONTEÚDO */}
-
-            <div className="flex-1 overflow-y-auto px-5 py-4">
+            <div className="flex-1 overflow-y-auto px-5 py-5">
               <Carrinho
                 itens={carrinho}
                 onAlterarQtd={alterarQtd}
@@ -315,156 +287,161 @@ function Index() {
   );
 }
 
-/*
- * ======================================================
- * CARD DO PRODUTO
- * ======================================================
- */
-
 function CardProduto({
   produto,
   onAdicionar,
 }: {
   produto: Produto;
-
   onAdicionar: (produto: Produto, tamanho: Tamanho, quantidade: number) => void;
 }) {
   const [tamanho, setTamanho] = useState<Tamanho>("inteiro");
-
   const [quantidade, setQuantidade] = useState(0);
 
   const preco = precoPorTamanho(produto, tamanho);
-
   const semEstoque = !disponivelPorTamanho(produto, tamanho);
 
   const maxQuantidade =
     tamanho === "inteiro" ? Math.floor(produto.estoque_meios / 2) : produto.estoque_meios;
 
   return (
-    <div className="panel flex flex-col gap-3 overflow-hidden p-0">
-      {/* FOTO */}
-
-      {produto.foto_url && (
-        <img src={produto.foto_url} alt={produto.nome} className="h-40 w-full object-cover" />
+    <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg">
+      {produto.foto_url ? (
+        <div className="relative h-52 overflow-hidden bg-muted sm:h-56">
+          <img
+            src={produto.foto_url}
+            alt={produto.nome}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
+        </div>
+      ) : (
+        <div className="flex h-44 items-center justify-center bg-muted">
+          <ShoppingBag className="size-12 text-muted-foreground/50" />
+        </div>
       )}
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        {/* INFORMAÇÕES */}
-
+      <div className="flex flex-1 flex-col gap-4 p-5">
         <div>
-          <div className="flex items-center gap-2">
-            <h4 className="text-sm font-semibold">{produto.nome}</h4>
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="text-lg font-extrabold leading-tight tracking-tight">{produto.nome}</h4>
 
             {produto.tags.map((t) => (
               <span
                 key={t}
-                className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary"
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary"
               >
                 {t === "vegano" ? (
-                  <Leaf className="size-3" strokeWidth={1.5} />
+                  <Leaf className="size-3.5" strokeWidth={2} />
                 ) : t === "sem glúten" ? (
-                  <WheatOff className="size-3" strokeWidth={1.5} />
+                  <WheatOff className="size-3.5" strokeWidth={2} />
                 ) : null}
-
                 {t}
               </span>
             ))}
           </div>
 
           {produto.descricao && (
-            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {produto.descricao}
             </p>
           )}
         </div>
 
-        {/* TAMANHO */}
+        <div className="rounded-xl bg-muted/50 p-3">
+          <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
+            Escolha o tamanho
+          </p>
 
-        <div className="flex gap-1.5">
-          {(["inteiro", "metade"] as Tamanho[]).map((t) => {
-            const disponivel = disponivelPorTamanho(produto, t);
+          <div className="grid grid-cols-2 gap-2">
+            {(["inteiro", "metade"] as Tamanho[]).map((t) => {
+              const disponivel = disponivelPorTamanho(produto, t);
+              const selecionado = tamanho === t;
 
-            return (
-              <button
-                key={t}
-                type="button"
-                disabled={!disponivel}
-                onClick={() => {
-                  setTamanho(t);
-                  setQuantidade(0);
-                }}
-                className={cn(
-                  "flex-1 rounded-lg border px-2 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40",
-
-                  tamanho === t
-                    ? "border-primary/40 bg-primary-soft text-primary"
-                    : "border-border text-muted-foreground hover:bg-accent",
-                )}
-              >
-                {t === "inteiro" ? "Inteiro" : "Metade"} · {brl(precoPorTamanho(produto, t))}
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  disabled={!disponivel}
+                  onClick={() => {
+                    setTamanho(t);
+                    setQuantidade(0);
+                  }}
+                  className={cn(
+                    "flex min-h-16 flex-col items-center justify-center rounded-xl border-2 px-2 py-2 transition-all disabled:cursor-not-allowed disabled:opacity-40",
+                    selecionado
+                      ? "border-primary bg-primary/10 text-primary shadow-sm"
+                      : "border-border bg-background text-foreground hover:border-primary/40",
+                  )}
+                >
+                  <span className="text-sm font-extrabold">
+                    {t === "inteiro" ? "Inteiro" : "Metade"}
+                  </span>
+                  <span className="mt-0.5 text-base font-black">
+                    {brl(precoPorTamanho(produto, t))}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* ESTOQUE */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-muted-foreground">
+            {semEstoque
+              ? "Sem estoque para este tamanho"
+              : `${maxQuantidade} ${maxQuantidade === 1 ? "disponível" : "disponíveis"}`}
+          </span>
 
-        <p className="text-xs text-muted-foreground">
-          {semEstoque
-            ? "Sem estoque para este tamanho"
-            : `${maxQuantidade} ${maxQuantidade === 1 ? "disponível" : "disponíveis"}`}
-        </p>
+          {!semEstoque && (
+            <span className="text-xs font-bold text-green-700 dark:text-green-400">Disponível</span>
+          )}
+        </div>
 
-        {/* QUANTIDADE */}
-
-        <div className="mt-auto flex items-center gap-3">
-          <div className="flex items-center gap-1">
+        <div className="mt-auto flex items-center gap-3 border-t border-border pt-4">
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-background p-1">
             <button
               type="button"
+              disabled={quantidade === 0}
               onClick={() => setQuantidade((q) => Math.max(0, q - 1))}
               aria-label="Diminuir quantidade"
-              className="size-8 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent"
+              className="flex size-9 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-accent disabled:opacity-30"
             >
-              <Minus className="mx-auto size-3.5" strokeWidth={1.5} />
+              <Minus className="size-4" strokeWidth={2.5} />
             </button>
 
-            <span className="w-6 text-center text-sm">{quantidade}</span>
+            <span className="w-6 text-center text-base font-extrabold tabular-nums">
+              {quantidade}
+            </span>
 
             <button
               type="button"
-              onClick={() => setQuantidade((q) => Math.min(maxQuantidade || 1, q + 1))}
+              disabled={semEstoque || quantidade >= maxQuantidade}
+              onClick={() => setQuantidade((q) => Math.min(maxQuantidade, q + 1))}
               aria-label="Aumentar quantidade"
-              className="size-8 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent"
+              className="flex size-9 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-accent disabled:opacity-30"
             >
-              <Plus className="mx-auto size-3.5" strokeWidth={1.5} />
+              <Plus className="size-4" strokeWidth={2.5} />
             </button>
           </div>
-
-          {/* ADICIONAR */}
 
           <button
             type="button"
             disabled={semEstoque || quantidade === 0}
             onClick={() => {
               onAdicionar(produto, tamanho, quantidade);
-
               setQuantidade(0);
             }}
-            className="flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-extrabold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >
+            <ShoppingBag className="size-4" strokeWidth={2.5} />
             Adicionar
           </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
-
-/*
- * ======================================================
- * DADOS DO CLIENTE
- * ======================================================
- */
 
 type DadosClienteCarrinho = DadosCliente & {
   numero?: string;
@@ -472,23 +449,12 @@ type DadosClienteCarrinho = DadosCliente & {
   bairro?: string;
   referencia?: string;
   taxaEntrega?: number;
-  formaPagamento?: FormaPagamento;
-
   precisaTroco?: "sim" | "nao" | "";
-
   valorRecebido?: number | null;
-
   troco?: number | null;
-
   subtotal?: number;
   total?: number;
 };
-
-/*
- * ======================================================
- * CARRINHO
- * ======================================================
- */
 
 function Carrinho({
   itens,
@@ -497,40 +463,22 @@ function Carrinho({
   enviando,
 }: {
   itens: ItemCarrinho[];
-
   onAlterarQtd: (produtoId: string, tamanho: Tamanho, delta: number) => void;
-
   onFinalizar: (dados: DadosClienteCarrinho) => void;
-
   enviando: boolean;
 }) {
   const [nome, setNome] = useState("");
-
   const [telefone, setTelefone] = useState("");
-
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("retirada");
-
   const [endereco, setEndereco] = useState("");
-
   const [numero, setNumero] = useState("");
-
   const [complemento, setComplemento] = useState("");
-
   const [bairro, setBairro] = useState("");
-
   const [referencia, setReferencia] = useState("");
-
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>("pix");
-
   const [valorRecebido, setValorRecebido] = useState("");
-
   const [precisaTroco, setPrecisaTroco] = useState<"sim" | "nao" | "">("");
-
-  /*
-   * ==========================================
-   * TAXAS DE ENTREGA
-   * ==========================================
-   */
+  const [mostrarErros, setMostrarErros] = useState(false);
 
   const TAXAS_ENTREGA: Record<string, number> = {
     "Alto Alegre": 2,
@@ -551,521 +499,502 @@ function Carrinho({
     "Várzea Redonda": 3,
   };
 
-  /*
-   * ==========================================
-   * SUBTOTAL
-   * ==========================================
-   */
-
   const subtotal = itens.reduce(
     (a, i) => a + precoPorTamanho(i.produto, i.tamanho) * i.quantidade,
     0,
   );
 
-  /*
-   * ==========================================
-   * TAXA
-   * ==========================================
-   */
-
   const taxaEntrega = tipoEntrega === "entrega" && bairro ? (TAXAS_ENTREGA[bairro] ?? 0) : 0;
-
-  /*
-   * ==========================================
-   * TOTAL
-   * ==========================================
-   */
 
   const total = subtotal + taxaEntrega;
 
-  /*
-   * ==========================================
-   * VALIDAÇÃO
-   * ==========================================
-   */
-
-  const podeEnviar =
-    itens.length > 0 &&
-    nome.trim().length > 0 &&
-    telefone.trim().length > 0 &&
-    (tipoEntrega === "retirada" ||
-      (endereco.trim().length > 0 &&
-        numero.trim().length > 0 &&
-        bairro.trim().length > 0 &&
-        referencia.trim().length > 0)) &&
-    // cash orders must answer "Vai precisar de troco?" so the change info reaches the DB
-    (formaPagamento !== "dinheiro" || precisaTroco !== "");
-
-  /*
-   * ==========================================
-   * TROCO
-   * ==========================================
-   */
-
   const valorRecebidoNumero = Number(valorRecebido.replace(",", "."));
 
-  const valorRecebidoInvalido = valorRecebido !== "" && !Number.isFinite(valorRecebidoNumero);
+  const valorRecebidoInvalido =
+    valorRecebido !== "" && (!Number.isFinite(valorRecebidoNumero) || valorRecebidoNumero <= 0);
 
   const trocoInsuficiente =
     formaPagamento === "dinheiro" &&
     precisaTroco === "sim" &&
     (valorRecebido === "" || valorRecebidoInvalido || valorRecebidoNumero < total);
 
-  /*
-   * ==========================================
-   * CARRINHO VAZIO
-   * ==========================================
-   */
+  const erros = {
+    nome: nome.trim().length < 3 ? "Informe seu nome com pelo menos 3 caracteres." : "",
+
+    telefone:
+      telefone.replace(/\D/g, "").length !== 11
+        ? "Informe um telefone válido com DDD e 11 dígitos."
+        : "",
+
+    endereco:
+      tipoEntrega === "entrega" && endereco.trim().length < 3 ? "Informe sua rua ou avenida." : "",
+
+    numero:
+      tipoEntrega === "entrega" && !/^(\d+|S\/N)$/i.test(numero.trim())
+        ? "Informe um número válido ou S/N."
+        : "",
+
+    bairro: tipoEntrega === "entrega" && !bairro ? "Selecione seu bairro." : "",
+
+    troco:
+      formaPagamento === "dinheiro" && precisaTroco === "" ? "Informe se precisa de troco." : "",
+
+    valorRecebido:
+      formaPagamento === "dinheiro" &&
+      precisaTroco === "sim" &&
+      (valorRecebido === "" || valorRecebidoInvalido || valorRecebidoNumero < total)
+        ? "Informe um valor igual ou superior ao total do pedido."
+        : "",
+  };
+
+  const formularioValido = Object.values(erros).every((erro) => !erro);
+
+  function finalizarPedido() {
+    setMostrarErros(true);
+
+    if (itens.length === 0 || !formularioValido || trocoInsuficiente) {
+      return;
+    }
+
+    onFinalizar({
+      nome: nome.trim(),
+      telefone: telefone.trim(),
+      tipoEntrega,
+      endereco: tipoEntrega === "entrega" ? endereco.trim() : "",
+      numero: tipoEntrega === "entrega" ? numero.trim() : "",
+      complemento: tipoEntrega === "entrega" ? complemento.trim() : "",
+      bairro: tipoEntrega === "entrega" ? bairro : "",
+      referencia: tipoEntrega === "entrega" ? referencia.trim() : "",
+      taxaEntrega,
+      formaPagamento,
+      precisaTroco: formaPagamento === "dinheiro" ? precisaTroco : "",
+      valorRecebido:
+        formaPagamento === "dinheiro" && precisaTroco === "sim" ? valorRecebidoNumero : null,
+      troco:
+        formaPagamento === "dinheiro" && precisaTroco === "sim" && valorRecebidoNumero >= total
+          ? valorRecebidoNumero - total
+          : null,
+      subtotal,
+      total,
+    });
+  }
+
+  const classeInput =
+    "w-full rounded-xl border bg-background px-4 py-3 text-sm font-medium outline-none transition-all placeholder:font-normal focus:border-primary focus:ring-2 focus:ring-primary/10";
+
+  const classeLabel = "block text-sm font-bold text-foreground";
 
   if (itens.length === 0) {
     return (
-      <p className="p-6 text-center text-sm text-muted-foreground">Seu carrinho está vazio.</p>
+      <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+        <ShoppingBag className="mx-auto size-10 text-muted-foreground" />
+        <p className="mt-3 font-bold">Seu carrinho está vazio.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Adicione seus bolos favoritos para continuar.
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-      {/* ======================================= */}
-      {/* ITENS                                  */}
-      {/* ======================================= */}
+    <div className="space-y-6">
+      <section className="space-y-3">
+        <h3 className="text-base font-extrabold">Itens do pedido</h3>
 
-      <div className="space-y-3">
         {itens.map((item) => (
-          <div key={`${item.produto.id}-${item.tamanho}`} className="panel p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold">{item.produto.nome}</p>
-
-                <p className="text-xs text-muted-foreground">
-                  {item.tamanho === "inteiro" ? "Inteiro" : "Metade"} ·{" "}
+          <div
+            key={`${item.produto.id}-${item.tamanho}`}
+            className="rounded-xl border border-border bg-card p-4 shadow-sm"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-extrabold">{item.produto.nome}</p>
+                <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                  {item.tamanho === "inteiro" ? "Bolo inteiro" : "Meio bolo"}
+                </p>
+                <p className="mt-1 text-base font-black text-primary">
                   {brl(precoPorTamanho(item.produto, item.tamanho) * item.quantidade)}
                 </p>
               </div>
 
-              <div className="flex items-center gap-1">
-                {/* DIMINUIR */}
-
+              <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border p-1">
                 <button
                   type="button"
                   onClick={() => onAlterarQtd(item.produto.id, item.tamanho, -1)}
                   aria-label="Diminuir"
-                  className="size-7 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent"
+                  className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent"
                 >
                   {item.quantidade === 1 ? (
-                    <Trash2 className="mx-auto size-3.5" strokeWidth={1.5} />
+                    <Trash2 className="size-4" strokeWidth={2} />
                   ) : (
-                    <Minus className="mx-auto size-3.5" strokeWidth={1.5} />
+                    <Minus className="size-4" strokeWidth={2} />
                   )}
                 </button>
 
-                <span className="w-5 text-center text-sm">{item.quantidade}</span>
-
-                {/* AUMENTAR */}
+                <span className="w-6 text-center text-sm font-extrabold">{item.quantidade}</span>
 
                 <button
                   type="button"
                   onClick={() => onAlterarQtd(item.produto.id, item.tamanho, 1)}
                   aria-label="Aumentar"
-                  className="size-7 rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent"
+                  className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent"
                 >
-                  <Plus className="mx-auto size-3.5" strokeWidth={1.5} />
+                  <Plus className="size-4" strokeWidth={2} />
                 </button>
               </div>
             </div>
           </div>
         ))}
-      </div>
+      </section>
 
-      {/* ======================================= */}
-      {/* RESUMO                                  */}
-      {/* ======================================= */}
+      <section className="rounded-2xl border border-border bg-muted/30 p-4">
+        <h3 className="mb-3 text-base font-extrabold">Resumo do pedido</h3>
 
-      <div className="space-y-2 border-t border-border pt-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Subtotal</span>
-
-          <span className="text-sm">{brl(subtotal)}</span>
-        </div>
-
-        {tipoEntrega === "entrega" && bairro && (
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Taxa de entrega</span>
-
-            <span className="text-sm">{brl(taxaEntrega)}</span>
+            <span className="text-sm font-medium text-muted-foreground">Subtotal</span>
+            <span className="text-sm font-bold">{brl(subtotal)}</span>
           </div>
-        )}
 
-        <div className="flex items-center justify-between border-t border-border pt-2">
-          <span className="text-sm font-medium">Total</span>
+          {tipoEntrega === "entrega" && bairro && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Taxa de entrega</span>
+              <span className="text-sm font-bold">{brl(taxaEntrega)}</span>
+            </div>
+          )}
 
-          <span className="text-lg font-semibold">{brl(total)}</span>
+          <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+            <span className="text-base font-extrabold">Total</span>
+            <span className="text-2xl font-black text-primary">{brl(total)}</span>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* ======================================= */}
-      {/* DADOS DO CLIENTE                        */}
-      {/* ======================================= */}
+      <section className="space-y-4 border-t border-border pt-5">
+        <div>
+          <h3 className="text-base font-extrabold">Seus dados</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Preencha seus dados para identificarmos seu pedido.
+          </p>
+        </div>
 
-      <div className="space-y-3 border-t border-border pt-4">
-        {/* NOME */}
-
-        <label className="block space-y-1.5">
-          <span className="text-xs text-muted-foreground">Nome</span>
-
+        <label className="block space-y-2">
+          <span className={classeLabel}>Nome completo *</span>
           <input
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             placeholder="Digite seu nome"
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+            className={cn(
+              classeInput,
+              mostrarErros && erros.nome ? "border-destructive" : "border-border",
+            )}
           />
+          {mostrarErros && erros.nome && (
+            <p className="text-xs font-semibold text-destructive">{erros.nome}</p>
+          )}
         </label>
 
-        {/* TELEFONE */}
-
-        <label className="block space-y-1.5">
-          <span className="text-xs text-muted-foreground">Telefone</span>
-
+        <label className="block space-y-2">
+          <span className={classeLabel}>Telefone / WhatsApp *</span>
           <input
             value={telefone}
-            onChange={(e) => setTelefone(e.target.value)}
+            onChange={(e) => setTelefone(formatarTelefone(e.target.value))}
             placeholder="(83) 99999-9999"
             inputMode="tel"
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+            maxLength={15}
+            className={cn(
+              classeInput,
+              mostrarErros && erros.telefone ? "border-destructive" : "border-border",
+            )}
           />
+          {mostrarErros && erros.telefone && (
+            <p className="text-xs font-semibold text-destructive">{erros.telefone}</p>
+          )}
         </label>
+      </section>
 
-        {/* ===================================== */}
-        {/* TIPO DE ENTREGA                       */}
-        {/* ===================================== */}
-
+      <section className="space-y-3 border-t border-border pt-5">
         <div>
-          <span className="text-xs text-muted-foreground">Como deseja receber o pedido?</span>
-
-          <div className="mt-1.5 flex gap-2">
-            {/* RETIRADA */}
-
-            <button
-              type="button"
-              onClick={() => {
-                setTipoEntrega("retirada");
-
-                setEndereco("");
-                setNumero("");
-                setComplemento("");
-                setBairro("");
-                setReferencia("");
-              }}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
-
-                tipoEntrega === "retirada"
-                  ? "border-primary/40 bg-primary-soft text-primary"
-                  : "border-border text-muted-foreground hover:bg-accent",
-              )}
-            >
-              <Store className="size-4" strokeWidth={1.5} />
-              Retirar na loja
-            </button>
-
-            {/* ENTREGA */}
-
-            <button
-              type="button"
-              onClick={() => setTipoEntrega("entrega")}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
-
-                tipoEntrega === "entrega"
-                  ? "border-primary/40 bg-primary-soft text-primary"
-                  : "border-border text-muted-foreground hover:bg-accent",
-              )}
-            >
-              <Truck className="size-4" strokeWidth={1.5} />
-              Receber em casa
-            </button>
-          </div>
+          <h3 className="text-base font-extrabold">Recebimento do pedido</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Escolha como deseja receber seus bolos.
+          </p>
         </div>
 
-        {/* ===================================== */}
-        {/* ENDEREÇO                              */}
-        {/* ===================================== */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setTipoEntrega("retirada");
+              setEndereco("");
+              setNumero("");
+              setComplemento("");
+              setBairro("");
+              setReferencia("");
+            }}
+            className={cn(
+              "flex min-h-20 flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-bold transition-all",
+              tipoEntrega === "retirada"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-background hover:border-primary/40",
+            )}
+          >
+            <Store className="size-6" strokeWidth={2} />
+            Retirar na loja
+          </button>
 
-        {tipoEntrega === "entrega" && (
-          <div className="space-y-3 rounded-lg border border-border bg-background p-3">
-            <div>
-              <p className="text-sm font-medium">Endereço de entrega</p>
+          <button
+            type="button"
+            onClick={() => setTipoEntrega("entrega")}
+            className={cn(
+              "flex min-h-20 flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-bold transition-all",
+              tipoEntrega === "entrega"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-background hover:border-primary/40",
+            )}
+          >
+            <Truck className="size-6" strokeWidth={2} />
+            Receber em casa
+          </button>
+        </div>
+      </section>
 
-              <p className="mt-1 text-xs text-muted-foreground">
-                Informe os dados para receber seu pedido.
-              </p>
-            </div>
+      {tipoEntrega === "entrega" && (
+        <section className="space-y-4 rounded-2xl border border-border bg-muted/20 p-4">
+          <div>
+            <h3 className="text-base font-extrabold">Endereço de entrega</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Informe onde deseja receber seu pedido.
+            </p>
+          </div>
 
-            {/* RUA */}
+          <label className="block space-y-2">
+            <span className={classeLabel}>Rua / Avenida *</span>
+            <input
+              value={endereco}
+              onChange={(e) => setEndereco(e.target.value)}
+              placeholder="Digite sua rua ou avenida"
+              className={cn(
+                classeInput,
+                mostrarErros && erros.endereco ? "border-destructive" : "border-border",
+              )}
+            />
+            {mostrarErros && erros.endereco && (
+              <p className="text-xs font-semibold text-destructive">{erros.endereco}</p>
+            )}
+          </label>
 
-            <label className="block space-y-1.5">
-              <span className="text-xs text-muted-foreground">Rua / Avenida</span>
-
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block space-y-2">
+              <span className={classeLabel}>Número *</span>
               <input
-                value={endereco}
-                onChange={(e) => setEndereco(e.target.value)}
-                placeholder="Digite sua rua ou avenida"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+                value={numero}
+                onChange={(e) => setNumero(e.target.value)}
+                placeholder="123 ou S/N"
+                className={cn(
+                  classeInput,
+                  mostrarErros && erros.numero ? "border-destructive" : "border-border",
+                )}
               />
+              {mostrarErros && erros.numero && (
+                <p className="text-xs font-semibold text-destructive">{erros.numero}</p>
+              )}
             </label>
 
-            {/* NÚMERO + COMPLEMENTO */}
+            <label className="block space-y-2">
+              <span className={classeLabel}>Complemento</span>
+              <input
+                value={complemento}
+                onChange={(e) => setComplemento(e.target.value)}
+                placeholder="Casa, apto..."
+                className={cn(classeInput, "border-border")}
+              />
+            </label>
+          </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block space-y-1.5">
-                <span className="text-xs text-muted-foreground">Número</span>
+          <label className="block space-y-2">
+            <span className={classeLabel}>Bairro *</span>
+            <select
+              value={bairro}
+              onChange={(e) => setBairro(e.target.value)}
+              className={cn(
+                classeInput,
+                mostrarErros && erros.bairro ? "border-destructive" : "border-border",
+              )}
+            >
+              <option value="">Selecione o bairro</option>
+              {Object.entries(TAXAS_ENTREGA).map(([nomeBairro, taxa]) => (
+                <option key={nomeBairro} value={nomeBairro}>
+                  {nomeBairro} - {brl(taxa)}
+                </option>
+              ))}
+            </select>
+            {mostrarErros && erros.bairro && (
+              <p className="text-xs font-semibold text-destructive">{erros.bairro}</p>
+            )}
+          </label>
 
-                <input
-                  value={numero}
-                  onChange={(e) => setNumero(e.target.value)}
-                  placeholder="Ex: 123"
-                  inputMode="numeric"
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
-                />
-              </label>
+          <label className="block space-y-2">
+            <span className={classeLabel}>Ponto de referência</span>
+            <input
+              value={referencia}
+              onChange={(e) => setReferencia(e.target.value)}
+              placeholder="Ex: perto da praça, em frente à escola..."
+              className={cn(classeInput, "border-border")}
+            />
+          </label>
 
-              <label className="block space-y-1.5">
-                <span className="text-xs text-muted-foreground">Complemento</span>
-
-                <input
-                  value={complemento}
-                  onChange={(e) => setComplemento(e.target.value)}
-                  placeholder="Casa, apto..."
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
-                />
-              </label>
+          {bairro && (
+            <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/10 p-4">
+              <div>
+                <p className="text-sm font-extrabold">Taxa de entrega</p>
+                <p className="mt-1 text-xs font-medium text-muted-foreground">{bairro}</p>
+              </div>
+              <span className="text-lg font-black text-primary">{brl(taxaEntrega)}</span>
             </div>
+          )}
+        </section>
+      )}
 
-            {/* BAIRRO */}
+      <section className="space-y-4 border-t border-border pt-5">
+        <div>
+          <h3 className="text-base font-extrabold">Forma de pagamento</h3>
+          <p className="mt-1 text-xs text-muted-foreground">Selecione como deseja pagar.</p>
+        </div>
 
-            <label className="block space-y-1.5">
-              <span className="text-xs text-muted-foreground">Bairro</span>
+        <div className="grid grid-cols-3 gap-2">
+          {(
+            [
+              { id: "pix", label: "Pix", icon: Landmark },
+              { id: "cartao", label: "Cartão", icon: CreditCard },
+              { id: "dinheiro", label: "Dinheiro", icon: Banknote },
+            ] as const
+          ).map((op) => (
+            <button
+              key={op.id}
+              type="button"
+              onClick={() => setFormaPagamento(op.id)}
+              className={cn(
+                "flex min-h-20 flex-col items-center justify-center gap-2 rounded-xl border-2 p-2 text-sm font-bold transition-all",
+                formaPagamento === op.id
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-background hover:border-primary/40",
+              )}
+            >
+              <op.icon className="size-6" strokeWidth={2} />
+              {op.label}
+            </button>
+          ))}
+        </div>
 
-              <select
-                value={bairro}
-                onChange={(e) => setBairro(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
+        {formaPagamento === "dinheiro" && (
+          <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
+            <span className="text-sm font-bold">Vai precisar de troco? *</span>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setPrecisaTroco("sim");
+                  setValorRecebido("");
+                }}
+                className={cn(
+                  "rounded-xl border-2 px-3 py-3 text-sm font-bold transition-all",
+                  precisaTroco === "sim"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:border-primary/40",
+                )}
               >
-                <option value="">Selecione o bairro</option>
+                Sim, preciso
+              </button>
 
-                {Object.entries(TAXAS_ENTREGA).map(([nomeBairro, taxa]) => (
-                  <option key={nomeBairro} value={nomeBairro}>
-                    {nomeBairro} - {brl(taxa)}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setPrecisaTroco("nao");
+                  setValorRecebido("");
+                }}
+                className={cn(
+                  "rounded-xl border-2 px-3 py-3 text-sm font-bold transition-all",
+                  precisaTroco === "nao"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:border-primary/40",
+                )}
+              >
+                Não preciso
+              </button>
+            </div>
 
-            {/* REFERÊNCIA */}
+            {mostrarErros && erros.troco && (
+              <p className="text-xs font-semibold text-destructive">{erros.troco}</p>
+            )}
 
-            <label className="block space-y-1.5">
-              <span className="text-xs text-muted-foreground">Ponto de referência</span>
+            {precisaTroco === "sim" && (
+              <div className="space-y-2">
+                <label className="block space-y-2">
+                  <span className={classeLabel}>Vai pagar com quanto?</span>
+                  <input
+                    inputMode="decimal"
+                    placeholder="Ex: 50"
+                    value={valorRecebido}
+                    onChange={(e) => setValorRecebido(e.target.value)}
+                    className={cn(
+                      classeInput,
+                      mostrarErros && erros.valorRecebido ? "border-destructive" : "border-border",
+                    )}
+                  />
+                </label>
 
-              <input
-                value={referencia}
-                onChange={(e) => setReferencia(e.target.value)}
-                placeholder="Ex: perto da praça, em frente à escola..."
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
-              />
-            </label>
+                {valorRecebido && (
+                  <p
+                    className={cn(
+                      "text-sm font-bold",
+                      trocoInsuficiente ? "text-destructive" : "text-green-700 dark:text-green-400",
+                    )}
+                  >
+                    {valorRecebidoInvalido
+                      ? "Digite um valor válido. Ex: 50"
+                      : valorRecebidoNumero < total
+                        ? "O valor informado é menor que o total do pedido."
+                        : `Troco: ${brl(valorRecebidoNumero - total)}`}
+                  </p>
+                )}
 
-            {/* TAXA */}
-
-            {bairro && (
-              <div className="flex items-center justify-between rounded-lg border border-border bg-primary-soft p-3">
-                <div>
-                  <p className="text-sm font-medium">Taxa de entrega</p>
-
-                  <p className="text-xs text-muted-foreground">{bairro}</p>
-                </div>
-
-                <span className="text-sm font-semibold text-primary">{brl(taxaEntrega)}</span>
+                {mostrarErros && erros.valorRecebido && (
+                  <p className="text-xs font-semibold text-destructive">{erros.valorRecebido}</p>
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* ===================================== */}
-        {/* FORMA DE PAGAMENTO                    */}
-        {/* ===================================== */}
+        {formaPagamento === "pix" && (
+          <p className="rounded-xl border border-border bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground">
+            O QR Code do PIX aparece na próxima tela, assim que o pedido for enviado.
+          </p>
+        )}
+      </section>
 
-        <div>
-          <span className="text-xs text-muted-foreground">Forma de pagamento</span>
-
-          <div className="mt-1.5 grid grid-cols-3 gap-2">
-            {(
-              [
-                {
-                  id: "pix",
-                  label: "Pix",
-                  icon: Landmark,
-                },
-                {
-                  id: "cartao",
-                  label: "Cartão",
-                  icon: CreditCard,
-                },
-                {
-                  id: "dinheiro",
-                  label: "Dinheiro",
-                  icon: Banknote,
-                },
-              ] as const
-            ).map((op) => (
-              <button
-                key={op.id}
-                type="button"
-                onClick={() => setFormaPagamento(op.id)}
-                className={cn(
-                  "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs transition-colors",
-
-                  formaPagamento === op.id
-                    ? "border-primary/40 bg-primary-soft text-primary"
-                    : "border-border text-muted-foreground hover:bg-accent",
-                )}
-              >
-                <op.icon className="size-4" strokeWidth={1.5} />
-
-                {op.label}
-              </button>
-            ))}
-          </div>
-
-          {/* DINHEIRO */}
-
-          {formaPagamento === "dinheiro" && (
-            <div className="mt-3 rounded-lg border border-border bg-background p-3">
-              <div className="space-y-2">
-                <span className="text-xs text-muted-foreground">Vai precisar de troco?</span>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPrecisaTroco("sim");
-                      setValorRecebido("");
-                    }}
-                    className={cn(
-                      "rounded-lg border px-3 py-2 text-sm transition-colors",
-
-                      precisaTroco === "sim"
-                        ? "border-primary/40 bg-primary-soft text-primary"
-                        : "border-border text-muted-foreground hover:bg-accent",
-                    )}
-                  >
-                    Sim
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPrecisaTroco("nao");
-                      setValorRecebido("");
-                    }}
-                    className={cn(
-                      "rounded-lg border px-3 py-2 text-sm transition-colors",
-
-                      precisaTroco === "nao"
-                        ? "border-primary/40 bg-primary-soft text-primary"
-                        : "border-border text-muted-foreground hover:bg-accent",
-                    )}
-                  >
-                    Não
-                  </button>
-                </div>
-              </div>
-
-              {precisaTroco === "sim" && (
-                <div className="mt-3 space-y-2">
-                  <label className="block space-y-1.5">
-                    <span className="text-xs text-muted-foreground">Vai pagar com quanto?</span>
-
-                    <input
-                      inputMode="decimal"
-                      placeholder="Ex: 50"
-                      value={valorRecebido}
-                      onChange={(e) => setValorRecebido(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/50"
-                    />
-                  </label>
-
-                  {valorRecebido && (
-                    <p
-                      className={cn(
-                        "text-sm font-medium",
-                        trocoInsuficiente ? "text-destructive" : "text-success",
-                      )}
-                    >
-                      {valorRecebidoInvalido
-                        ? "Digite um valor válido. Ex: 50"
-                        : valorRecebidoNumero < total
-                          ? "O valor informado é menor que o total do pedido."
-                          : `Troco: ${brl(valorRecebidoNumero - total)}`}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* PIX */}
-
-          {formaPagamento === "pix" && (
-            <p className="mt-3 rounded-lg border border-border bg-background p-3 text-xs text-muted-foreground">
-              O QR Code do PIX aparece na próxima tela, assim que o pedido for enviado.
-            </p>
-          )}
+      <div className="border-t border-border pt-5">
+        <div className="mb-4 flex items-center justify-between">
+          <span className="text-sm font-bold text-muted-foreground">Total do pedido</span>
+          <span className="text-xl font-black text-primary">{brl(total)}</span>
         </div>
+
+        <button
+          type="button"
+          disabled={enviando}
+          onClick={finalizarPedido}
+          className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-base font-extrabold text-primary-foreground shadow-lg transition-all hover:bg-primary/90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <ShoppingBag className="size-5" strokeWidth={2.5} />
+          {enviando ? "Enviando pedido..." : "Finalizar pedido"}
+        </button>
+
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          Confira os dados antes de confirmar seu pedido.
+        </p>
       </div>
-
-      {/* ======================================= */}
-      {/* FINALIZAR PEDIDOs                        */}
-      {/* ======================================= */}
-
-      <button
-        type="button"
-        disabled={!podeEnviar || enviando || trocoInsuficiente}
-        onClick={() =>
-          onFinalizar({
-            nome,
-            telefone,
-
-            tipoEntrega,
-
-            endereco,
-            numero,
-            complemento,
-            bairro,
-            referencia,
-
-            taxaEntrega,
-
-            formaPagamento,
-
-            precisaTroco: formaPagamento === "dinheiro" ? precisaTroco : "",
-
-            valorRecebido:
-              formaPagamento === "dinheiro" && precisaTroco === "sim" ? valorRecebidoNumero : null,
-
-            troco:
-              formaPagamento === "dinheiro" &&
-              precisaTroco === "sim" &&
-              valorRecebidoNumero >= total
-                ? valorRecebidoNumero - total
-                : null,
-
-            subtotal,
-            total,
-          })
-        }
-        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {enviando ? "Enviando pedido..." : "Finalizar pedido"}
-      </button>
     </div>
   );
 }
