@@ -163,3 +163,14 @@
 @utility hairline {
   border-bottom: 1px solid var(--color-border);
 }
+
+/* Padronização das imagens dos bolos */
+.imagem-bolo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  height: auto;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: 12px;
+}

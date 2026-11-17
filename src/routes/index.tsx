@@ -306,17 +306,17 @@ function CardProduto({
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg">
       {produto.foto_url ? (
-        <div className="relative h-52 overflow-hidden bg-muted sm:h-56">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
           <img
             src={produto.foto_url}
             alt={produto.nome}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
         </div>
       ) : (
-        <div className="flex h-44 items-center justify-center bg-muted">
+        <div className="flex aspect-[4/3] w-full items-center justify-center bg-muted">
           <ShoppingBag className="size-12 text-muted-foreground/50" />
         </div>
       )}
